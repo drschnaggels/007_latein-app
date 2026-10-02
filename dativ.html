@@ -21,15 +21,21 @@
     <!-- Fehler / Hinweis -->
     <div id="error" class="hidden rounded-xl bg-red-50 border border-red-200 text-red-700 p-4 text-sm"></div>
 
+    <!-- Stufen-Übersicht -->
+    <section id="overview" class="hidden space-y-3">
+      <p class="text-sm text-slate-500 text-center">Ab 🥈 Silber (80 %) wird die nächste Stufe freigeschaltet.</p>
+      <div id="stageList" class="grid gap-3"></div>
+    </section>
+
     <!-- Status -->
     <section id="status" class="hidden bg-white rounded-2xl shadow p-4 space-y-3">
       <div class="flex items-center justify-between gap-2">
-        <span id="roundLabel" class="text-sm font-semibold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700"></span>
+        <button id="btnOverview" class="text-sm font-semibold text-slate-500 hover:text-slate-800">← Stufen</button>
         <span class="text-sm font-semibold">🔥 <span id="streak">0</span> <span class="text-slate-400 font-normal">(Best: <span id="bestStreak">0</span>)</span></span>
       </div>
       <div>
         <div class="flex justify-between text-xs text-slate-500 mb-1">
-          <span>Frage <span id="qNum">0</span> von <span id="qTotal">0</span></span><span><span id="score">0</span> richtig</span>
+          <span><span id="doneCount">0</span> von <span id="totalCount">0</span> erledigt</span><span id="retryInfo"></span>
         </div>
         <div class="h-3 bg-slate-200 rounded-full overflow-hidden">
           <div id="pctBar" class="h-full bg-gradient-to-r from-emerald-500 to-indigo-500 transition-all duration-500" style="width:0%"></div>
@@ -37,31 +43,36 @@
       </div>
     </section>
 
-    <!-- Quiz-Karte -->
+    <!-- QuizCard: eine Karte für alle Stufen -->
     <section id="quiz" class="hidden bg-white rounded-2xl shadow p-6 space-y-5">
       <div class="text-center space-y-2">
-        <span id="typeBadge" class="inline-block text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-500"></span>
-        <p id="prompt" class="text-2xl font-bold break-words"></p>
-        <p id="sub" class="text-sm text-slate-500"></p>
+        <span id="modeBadge" class="inline-block text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700"></span>
+        <p id="ask" class="text-sm text-slate-500"></p>
+        <p id="show" class="text-3xl font-bold break-words"></p>
+        <p id="hint" class="text-xs text-slate-400"></p>
       </div>
       <div id="answers" class="grid gap-3"></div>
       <div id="feedback" class="hidden rounded-xl p-4 space-y-3 text-sm"></div>
       <button id="btnNext" class="hidden w-full px-5 py-3 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-900">Weiter ↵</button>
     </section>
 
-    <!-- Rundenabschluss -->
-    <section id="done" class="hidden bg-white rounded-2xl shadow p-6 space-y-4">
+    <!-- Auswertung -->
+    <section id="summary" class="hidden bg-white rounded-2xl shadow p-6 space-y-4">
       <div class="text-center space-y-1">
-        <p id="doneTitle" class="text-2xl font-bold"></p>
-        <p id="doneText" class="text-slate-600"></p>
+        <p id="sumStage" class="text-sm font-semibold text-slate-500"></p>
+        <p id="sumStars" class="text-4xl"></p>
+        <p id="sumTitle" class="text-2xl font-bold"></p>
+        <p id="sumText" class="text-slate-600"></p>
+        <p id="sumPct" class="text-5xl font-bold text-emerald-600"></p>
       </div>
       <div id="mistakes" class="hidden space-y-2">
-        <p class="text-sm font-semibold text-slate-500">Das solltest du dir noch einmal ansehen:</p>
+        <p class="text-sm font-semibold text-slate-500">Im ersten Versuch falsch:</p>
         <ul id="mistakeList" class="text-sm divide-y divide-slate-100 border border-slate-200 rounded-xl"></ul>
       </div>
       <div class="flex flex-col sm:flex-row gap-3 justify-center">
-        <button id="btnNewRound" class="px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700">Neue Runde</button>
-        <button id="btnRetry" class="px-5 py-3 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600">Fehler wiederholen</button>
+        <button id="btnNextStage" class="px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700"></button>
+        <button id="btnAgain" class="px-5 py-3 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600">Nochmal</button>
+        <button id="btnToOverview" class="px-5 py-3 rounded-xl bg-slate-200 font-semibold hover:bg-slate-300">Zur Übersicht</button>
       </div>
     </section>
   </main>
@@ -73,7 +84,8 @@
 (() => {
   const { esc, shuffle } = ViaTim;
   const STORAGE_KEY = 'via-tim-dativ-v1';
-  const ROUND_SIZE = 10;
+  const STAGE_KEY = 'vta_dativ_stage_';   // + Stufe + '_' + Lektionsauswahl
+  const PASS_PCT = 80;
   const STREAK_MILESTONES = [5, 10, 20, 30, 50];
 
   // Ablenker für Pronomen-Fragen: nur deutsche Bedeutungen bzw. Kasusangaben,
@@ -83,14 +95,16 @@
   // Verben, die ein (zusätzliches) Dativ-Objekt haben können – taugen nicht als „falsche“ Antwort
   const NOT_DISTRACTOR = ['dare', 'praebēre', 'dēbēre', 'narrāre', 'dīcere'];
 
+  const NUM = { sg: 'Singular', pl: 'Plural' };
+  // Dativ-Endungen je Deklination (Schlüssel siehe declKey)
+  const DAT_END = { sg: { a: 'ae', o: 'ō', 3: 'ī' }, pl: { a: 'īs', o: 'īs', 3: 'ibus' } };
+
   const $ = id => document.getElementById(id);
-  let pools = {};          // { typ: [Frage] } – alle Fragen der gewählten Lektionen
-  let queue = [];          // Fragen der aktuellen Runde
-  let pos = 0;
-  let score = 0;
+  let data = null;         // { nouns, pronouns, verbs, otherVerbs } der gewählten Lektionen
+  let sel = ViaTim.ALL;
+  let stages = [];         // verfügbare Stufen (mit Daten)
+  let run = null;          // aktueller Durchlauf
   let streak = 0;
-  let mistakes = [];
-  let isRetry = false;
   let locked = false;
 
   // ---------- Speicher ----------
@@ -105,9 +119,22 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); } catch (e) {}
   }
 
+  function getResult(stage) {
+    try { return JSON.parse(localStorage.getItem(STAGE_KEY + stage.id + '_' + sel)) || null; } catch (e) { return null; }
+  }
+  function saveResult(stage, pct) {
+    const old = getResult(stage);
+    if (old && old.best >= pct) return;
+    try { localStorage.setItem(STAGE_KEY + stage.id + '_' + sel, JSON.stringify({ best: pct, stars: starsFor(pct) })); } catch (e) {}
+  }
+
+  const starsFor = pct => (pct >= 90 ? 3 : pct >= 80 ? 2 : pct >= 60 ? 1 : 0);
+  const starText = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+
   // ---------- Hilfsfunktionen ----------
   const norm = s => String(s).trim().toLowerCase();
   const valid = v => v && v !== '-';
+  const verbHead = latin => String(latin).replace(/\(.*?\)/g, '').trim();
 
   // Bis zu n Ablenker: zuerst aus primary, dann aus filler; keine Dubletten, nie die richtige Antwort
   function distract(correct, primary, filler = [], n = 3) {
@@ -122,8 +149,6 @@
     return out;
   }
 
-  const verbHead = latin => String(latin).replace(/\(.*?\)/g, '').trim();
-
   let toastTimer;
   function toast(msg) {
     const t = $('toast');
@@ -133,7 +158,13 @@
     toastTimer = setTimeout(() => t.classList.add('opacity-0'), 2500);
   }
 
-  // ---------- Erklärungen ----------
+  // ---------- Grammatik-Erklärungen ----------
+  const declKey = n => {
+    const d = n.deklination || '';
+    return d.startsWith('a-') ? 'a' : d.startsWith('o-') ? 'o' : d.startsWith('3') ? '3' : null;
+  };
+  const stemOf = n => String(n.genitiv_sg).replace({ a: /ae$/, o: /ī$/, 3: /is$/ }[declKey(n)] || /$/, '');
+
   function nounForms(n) {
     return [
       ['Nominativ Singular', n.nom_sg], ['Genitiv Singular', n.genitiv_sg], ['Dativ Singular', n.dativ_sg],
@@ -142,19 +173,16 @@
   }
 
   function nounRule(n) {
-    const d = n.deklination || '';
-    if (d.startsWith('a-')) return 'a-Deklination: Dativ Singular auf <b>-ae</b>, Dativ Plural auf <b>-īs</b>. ' +
+    const k = declKey(n);
+    if (k === 'a') return 'a-Deklination: Dativ Singular auf <b>-ae</b>, Dativ Plural auf <b>-īs</b>. ' +
       'Achtung: -ae ist auch Genitiv Singular und Nominativ Plural – erst der Satz zeigt, welcher Fall gemeint ist.';
-    if (d.startsWith('o-')) return 'o-Deklination: Dativ Singular auf <b>-ō</b>, Dativ Plural auf <b>-īs</b>.';
-    if (d.startsWith('3')) {
-      const stem = String(n.genitiv_sg).replace(/is$/, '');
-      return `3. Deklination: Den Stamm erkennst du am Genitiv (${esc(n.genitiv_sg)} → <b>${esc(stem)}-</b>). ` +
-        'Daran hängt im Dativ Singular <b>-ī</b>, im Dativ Plural <b>-ibus</b>.';
-    }
-    return esc(d);
+    if (k === 'o') return 'o-Deklination: Dativ Singular auf <b>-ō</b>, Dativ Plural auf <b>-īs</b>.';
+    if (k === '3') return `3. Deklination: Den Stamm erkennst du am Genitiv (${esc(n.genitiv_sg)} → <b>${esc(stemOf(n))}-</b>). ` +
+      'Daran hängt im Dativ Singular <b>-ī</b>, im Dativ Plural <b>-ibus</b>.';
+    return esc(n.deklination || '');
   }
 
-  function nounExplain(n) {
+  function nounTable(n) {
     const rows = nounForms(n).map(([label, f]) =>
       `<tr class="${label.startsWith('Dativ') ? 'font-semibold' : 'text-slate-500'}"><td class="pr-3">${label}</td><td>${esc(f)}</td></tr>`).join('');
     const extra = String(n.dativ_pl).includes('/')
@@ -162,163 +190,198 @@
     return `<p>${nounRule(n)}${extra}</p><table class="text-sm">${rows}</table>`;
   }
 
+  // Signal-Endung einer Form, z. B. „a-Deklination + Endung -ae = Dativ Singular“
+  function signalRule(n, num, kasus, form) {
+    const k = declKey(n);
+    const label = `${kasus} ${NUM[num]}`;
+    let end = null;
+    if (kasus === 'Dativ') end = DAT_END[num][k];
+    else if (num === 'pl') end = { a: 'ae', o: 'ī', 3: /a$/.test(form) ? 'a' : 'ēs' }[k];
+    else if (k === 'a') end = 'a';
+    else if (k === 'o') end = 'us';
+    if (!end) return `<b>${esc(form)}</b> ist die Grundform (${label}) – ${esc(n.deklination)}.`;
+    const neuter = k === '3' && end === 'a' ? ' (Neutrum)' : '';
+    return `${esc(n.deklination)} + Endung <b>-${end}</b>${neuter} = ${label}${variantNote(n, form)}`;
+  }
+
+  // Doppelformen wie „deābus / deīs“ eigens erwähnen
+  const variantNote = (n, form) => String(form).includes('/')
+    ? ` (bei ${esc(n.nom_sg)} gibt es zwei Formen: ${esc(form)})` : '';
+
   const verbExplain = v =>
     `<p><b>${esc(v.konstruktion)}</b> – ${esc(v.german)}</p>` +
     (v.beispiel ? `<p>Beispiel: <i>${esc(v.beispiel)}</i></p>` : '') +
     '<p>Im Lateinischen steht nach diesem Verb der Dativ (Frage: <i>Wem?</i>) – auch wenn man im Deutschen manchmal anders fragt.</p>';
 
-  // ---------- Fragen erzeugen (nur aus den gewählten Lektionen) ----------
-  function buildPools(chosen) {
-    const nouns = chosen.flatMap(l => l.dativ_substantive).filter(n => n && valid(n.nom_sg) && valid(n.dativ_sg));
-    const pronouns = chosen.flatMap(l => l.dativ_pronomen).filter(p => p && p.form && p.bedeutung);
-    const verbs = chosen.flatMap(l => l.dativ_verben).filter(v => v && v.latin && v.german);
-
-    // Normale Verben aus dem Wortschatz als Ablenker (ohne Dativ-Verben und deren Bestandteile)
-    const dativWords = new Set(verbs.flatMap(v => verbHead(v.latin).split(/\s+/)));
-    const otherVerbs = chosen.flatMap(l => l.vokabeln)
-      .map(w => ({ head: verbHead(w.latin), german: w.german }))
-      .filter(w => {
-        const words = w.head.split(/\s+/);
-        return words.some(x => /re$/.test(x)) &&
-          !words.some(x => dativWords.has(x) || NOT_DISTRACTOR.includes(x));
+  // ---------- Data-Engine: Fragen je Stufe (nur aus den gewählten Lektionen) ----------
+  // Frage: { ask, show, hint, options, correct, explain (kurz), detail (zusätzlich bei Fehler), review }
+  function signalCheck(num) {
+    return data.nouns
+      .filter(n => ['dativ_', 'nom_', 'bedeutung_', 'nom_bedeutung_'].every(f => valid(n[f + num])))
+      .filter(n => norm(n['dativ_' + num]) !== norm(n['nom_' + num]))
+      .flatMap(n => {
+        const nomOpt = `${n['nom_bedeutung_' + num]} (Nominativ)`;
+        const datOpt = `${n['bedeutung_' + num]} (Dativ)`;
+        return [['Dativ', n['dativ_' + num], datOpt], ['Nominativ', n['nom_' + num], nomOpt]].map(([kasus, form, correct]) => ({
+          ask: 'Welcher Übersetzung entspricht diese Form?', show: form, hint: n.deklination,
+          options: [nomOpt, datOpt], correct,
+          explain: `<p>${signalRule(n, num, kasus, form)} → ${esc(correct)}</p>`, detail: nounTable(n),
+          review: `${form} = ${correct}`,
+        }));
       });
+  }
 
-    const p = { form: [], bestimmen: [], bedeutung: [], pronomen: [], verb: [] };
-    const add = (type, q) => { if (q.options.length >= 2) p[type].push({ type, ...q }); };
-
-    nouns.forEach(n => {
-      const own = nounForms(n);
-      const head = `${n.nom_sg}, ${n.genitiv_sg} · ${n.deklination}`;
-
-      // Dativform bilden
-      [['sg', 'Dativ Singular'], ['pl', 'Dativ Plural']].forEach(([num, label]) => {
+  function mapping(num) {
+    return data.nouns
+      .filter(n => declKey(n) && valid(n['dativ_' + num]) && valid(n['bedeutung_' + num]))
+      .map(n => {
+        const k = declKey(n);
+        const stem = stemOf(n);
         const correct = n['dativ_' + num];
-        if (!valid(correct)) return;
-        const filler = nouns.filter(o => o !== n).map(o => o['dativ_' + num]);
-        add('form', {
-          prompt: `${label} von „${n.nom_sg}“?`, sub: head, correct,
-          options: [correct, ...distract(correct, own.map(([, f]) => f), filler)],
-          explain: nounExplain(n), review: `${label} von ${n.nom_sg}`,
-        });
-
-        // Dativform übersetzen
-        const meaning = n['bedeutung_' + num];
-        if (!valid(meaning)) return;
-        const otherMeanings = nouns.filter(o => o !== n).flatMap(o => [o.bedeutung_sg, o.bedeutung_pl]);
-        add('bedeutung', {
-          prompt: `Was bedeutet „${correct}“?`, sub: `Dativform von ${n.nom_sg}`, correct: meaning,
-          options: [meaning, ...distract(meaning, [n[num === 'sg' ? 'bedeutung_pl' : 'bedeutung_sg']], otherMeanings)],
-          explain: nounExplain(n), review: `${correct} = ${meaning}`,
-        });
+        // Fiktive Formen: Stamm + Dativ-Endung einer anderen Deklination
+        const fakes = [...new Set(Object.values(DAT_END[num]))].filter(e => e !== DAT_END[num][k]).map(e => stem + e);
+        if (num === 'pl') fakes.push(n.dativ_sg);   // im Plural gibt es nur zwei Endungen → Singular als Ablenker
+        const meaning = n['nom_bedeutung_sg'];
+        return {
+          ask: `Wie lautet die richtige Form für Dativ ${NUM[num]} („${n['bedeutung_' + num]}“)?`,
+          show: valid(meaning) ? `${n.nom_sg} (${meaning})` : n.nom_sg, hint: '',
+          options: [correct, ...distract(correct, fakes, [], 2)], correct,
+          explain: `<p>„${esc(n.nom_sg)}“ gehört zur ${esc(n.deklination)} → Dativ ${NUM[num]} endet auf ` +
+            `<b>-${DAT_END[num][k]}</b> → <b>${esc(correct)}</b>${variantNote(n, correct)}</p>`,
+          detail: nounTable(n), review: `${n.nom_sg} → Dativ ${NUM[num]}: ${correct}`,
+        };
       });
+  }
 
-      // Form bestimmen – nur bei eindeutigen Formen (viae z. B. ist mehrdeutig)
-      own.forEach(([label, form]) => {
-        if (own.filter(([, f]) => norm(f) === norm(form)).length > 1) return;
-        add('bestimmen', {
-          prompt: `Bestimme: „${form}“`, sub: `von ${n.nom_sg}, ${n.genitiv_sg}`, correct: label,
-          options: [label, ...distract(label, own.map(([l]) => l))],
-          explain: nounExplain(n), review: `${form} = ${label}`,
-        });
-      });
-    });
-
-    pronouns.forEach(pr => {
+  function pronounQuestions() {
+    return data.pronouns.flatMap(pr => {
       const explain = `<p><b>${esc(pr.form)}</b> ist ${esc(pr.kasus)} – „${esc(pr.bedeutung)}“.</p>` +
         `<p>Der Dativ antwortet auf die Frage <i>Wem?</i> → ${esc(pr.bedeutung)}.</p>`;
-      add('pronomen', {
-        prompt: `Was bedeutet „${pr.form}“?`, sub: 'Pronomen', correct: pr.bedeutung,
+      const qs = [{
+        ask: 'Was bedeutet diese Form?', show: pr.form, hint: 'Pronomen', correct: pr.bedeutung,
         options: [pr.bedeutung, ...distract(pr.bedeutung, PRONOUN_MEANINGS)],
         explain, review: `${pr.form} = ${pr.bedeutung}`,
-      });
-      if (pr.kasus) add('pronomen', {
-        prompt: `Bestimme: „${pr.form}“`, sub: 'Pronomen', correct: pr.kasus,
+      }];
+      if (pr.kasus) qs.push({
+        ask: 'Bestimme die Form.', show: pr.form, hint: 'Pronomen', correct: pr.kasus,
         options: [pr.kasus, ...distract(pr.kasus, CASES)],
         explain, review: `${pr.form} = ${pr.kasus}`,
       });
+      return qs;
     });
+  }
 
-    verbs.forEach(v => {
-      add('verb', {
-        prompt: 'Welches Verb verlangt den Dativ?', sub: 'Nur eine Antwort ist richtig.', correct: v.latin,
+  function verbQuestions() {
+    const { verbs, otherVerbs, nouns } = data;
+    return verbs.flatMap(v => {
+      const qs = [{
+        ask: 'Welches Verb verlangt den Dativ?', show: '❓', hint: 'Nur eine Antwort ist richtig.', correct: v.latin,
         options: [v.latin, ...distract(v.latin, otherVerbs.map(o => o.head))],
         explain: verbExplain(v), review: v.konstruktion || v.latin,
-      });
-      add('verb', {
-        prompt: `Was bedeutet „${v.konstruktion || v.latin}“?`, sub: 'Verb mit Dativ', correct: v.german,
+      }, {
+        ask: 'Was bedeutet dieses Verb?', show: v.konstruktion || v.latin, hint: 'Verb mit Dativ', correct: v.german,
         options: [v.german, ...distract(v.german, verbs.filter(o => o !== v).map(o => o.german), otherVerbs.map(o => o.german))],
         explain: verbExplain(v), review: `${v.latin} = ${v.german}`,
-      });
+      }];
 
       // Beispiel ergänzen: Dativ-Objekt einsetzen – nur wenn das Substantiv in den gewählten Lektionen vorkommt
       const b = String(v.beispiel || '');
       const at = b.indexOf(v.latin);
       const obj = at > 0 ? b.slice(0, at).trim() : '';
       const noun = nouns.find(n => n.dativ_sg === obj || n.dativ_pl === obj);
-      if (!noun) return;
-      const trans = (b.match(/\(([^)]*)\)/) || [])[1] || '';
-      add('verb', {
-        prompt: `___ ${v.latin}`, sub: trans ? `„${trans}“` : 'Ergänze den Dativ.', correct: obj,
-        options: [obj, ...distract(obj, nounForms(noun).map(([, f]) => f))],
-        explain: verbExplain(v) + nounExplain(noun), review: b,
-      });
+      if (noun) {
+        const trans = (b.match(/\(([^)]*)\)/) || [])[1] || '';
+        qs.push({
+          ask: 'Ergänze den Dativ.', show: `___ ${v.latin}`, hint: trans ? `„${trans}“` : '', correct: obj,
+          options: [obj, ...distract(obj, nounForms(noun).map(([, f]) => f))],
+          explain: verbExplain(v), detail: nounTable(noun), review: b,
+        });
+      }
+      return qs;
     });
-
-    return p;
   }
 
-  const TYPE_LABELS = {
-    form: 'Substantiv · Dativ bilden', bestimmen: 'Substantiv · Form bestimmen',
-    bedeutung: 'Substantiv · Übersetzen', pronomen: 'Pronomen', verb: 'Verb + Dativ',
-  };
+  // Stufe 4 (Synthese: Mini-Sätze wie „Mulieribus persuādent“) dockt später als weiterer Eintrag mit build() an
+  const STAGES = [
+    { id: '1a', title: 'Stufe 1a · Signal-Check Singular', mode: 'Signal-Check Singular (Einzahl)', build: () => signalCheck('sg') },
+    { id: '1b', title: 'Stufe 1b · Signal-Check Plural', mode: 'Signal-Check Plural (Mehrzahl)', build: () => signalCheck('pl') },
+    { id: '2a', title: 'Stufe 2a · Dativ Singular bilden', mode: 'Dativ-Formen Singular bilden', build: () => mapping('sg') },
+    { id: '2b', title: 'Stufe 2b · Dativ Plural bilden', mode: 'Dativ-Formen Plural bilden', build: () => mapping('pl') },
+    { id: '3a', title: 'Stufe 3a · Pronomen', mode: 'Dativ-Pronomen', build: pronounQuestions },
+    { id: '3b', title: 'Stufe 3b · Verben mit Dativ', mode: 'Verben mit Dativ', build: verbQuestions },
+    { id: '4', title: 'Stufe 4 · Mini-Sätze', mode: 'Synthese', soon: true },
+  ];
 
-  // Runde zusammenstellen: Fragetypen möglichst gleichmäßig mischen
-  function buildRound() {
-    const left = Object.fromEntries(Object.entries(pools).map(([t, qs]) => [t, shuffle(qs)]));
-    const round = [];
-    while (round.length < ROUND_SIZE) {
-      const types = Object.keys(left).filter(t => left[t].length);
-      if (!types.length) break;
-      round.push(left[types[Math.floor(Math.random() * types.length)]].pop());
-    }
-    return round;
+  function prepareData(chosen) {
+    const nouns = chosen.flatMap(l => l.dativ_substantive).filter(n => n && valid(n.nom_sg) && valid(n.dativ_sg));
+    const pronouns = chosen.flatMap(l => l.dativ_pronomen).filter(p => p && p.form && p.bedeutung);
+    const verbs = chosen.flatMap(l => l.dativ_verben).filter(v => v && v.latin && v.german);
+    // Normale Verben aus dem Wortschatz als Ablenker (ohne Dativ-Verben und deren Bestandteile)
+    const dativWords = new Set(verbs.flatMap(v => verbHead(v.latin).split(/\s+/)));
+    const otherVerbs = chosen.flatMap(l => l.vokabeln)
+      .map(w => ({ head: verbHead(w.latin), german: w.german }))
+      .filter(w => {
+        const words = w.head.split(/\s+/);
+        return words.some(x => /re$/.test(x)) && !words.some(x => dativWords.has(x) || NOT_DISTRACTOR.includes(x));
+      });
+    return { nouns, pronouns, verbs, otherVerbs };
   }
 
-  // ---------- Ablauf ----------
+  // ---------- Ansichten ----------
   function show(section) {
-    $('status').classList.remove('hidden');
-    $('quiz').classList.toggle('hidden', section !== 'quiz');
-    $('done').classList.toggle('hidden', section !== 'done');
+    ['overview', 'quiz', 'summary'].forEach(s => $(s).classList.toggle('hidden', s !== section));
+    $('status').classList.toggle('hidden', section !== 'quiz');
+  }
+
+  const isUnlocked = i => i === 0 || ((getResult(stages[i - 1]) || {}).best || 0) >= PASS_PCT;
+
+  function renderOverview() {
+    locked = false;   // ausstehendes automatisches „Weiter“ verwerfen
+    const list = $('stageList');
+    list.innerHTML = '';
+    stages.forEach((st, i) => {
+      const res = getResult(st);
+      const open = !st.soon && isUnlocked(i);
+      const b = document.createElement('button');
+      b.disabled = !open;
+      b.className = 'w-full text-left bg-white rounded-2xl shadow p-4 flex items-center justify-between gap-3 border-2 border-transparent transition ' +
+        (open ? 'hover:border-emerald-400' : 'opacity-50 cursor-not-allowed');
+      const info = st.soon ? 'Demnächst' : !open ? '🔒 Erst die vorige Stufe mit Silber abschließen'
+        : `${st.count} Fragen` + (res ? ` · Bestwert ${res.best} %` : '');
+      b.innerHTML = `<div class="min-w-0"><p class="font-bold">${esc(st.title)}</p><p class="text-xs text-slate-500">${esc(info)}</p></div>` +
+        `<span class="shrink-0 text-xl text-amber-500">${st.soon ? '' : starText(res ? res.stars : 0)}</span>`;
+      if (open) b.onclick = () => startStage(st);
+      list.appendChild(b);
+    });
+    show('overview');
   }
 
   function renderStatus() {
-    $('roundLabel').textContent = isRetry ? 'Fehler-Runde' : 'Dativ-Runde';
-    $('qNum').textContent = Math.min(pos + 1, queue.length);
-    $('qTotal').textContent = queue.length;
-    $('score').textContent = score;
-    $('pctBar').style.width = (queue.length ? Math.round(pos / queue.length * 100) : 0) + '%';
+    $('doneCount').textContent = run.done;
+    $('totalCount').textContent = run.totalQuestions;
+    $('pctBar').style.width = Math.round(run.done / run.totalQuestions * 100) + '%';
+    const retries = run.queue.filter(q => run.tried.has(q.id)).length;
+    $('retryInfo').textContent = retries ? `${retries} zur Wiederholung` : '';
     $('streak').textContent = streak;
     $('bestStreak').textContent = store.bestStreak;
   }
 
-  function startRound(questions, retry) {
-    queue = questions;
-    isRetry = retry;
-    pos = 0;
-    score = 0;
-    mistakes = [];
+  // ---------- Durchlauf ----------
+  function startStage(stage) {
+    const questions = shuffle(stage.build()).map((q, id) => ({ ...q, id }));
+    run = { stage, queue: questions, totalQuestions: questions.length, firstTryCorrect: 0, wrongItemsArray: [], tried: new Set(), done: 0 };
     showQuestion();
   }
 
   function showQuestion() {
     locked = false;
+    if (!run.queue.length) return showSummary();
     renderStatus();
-    if (pos >= queue.length) return showDone();
-    const q = queue[pos];
-
-    $('typeBadge').textContent = TYPE_LABELS[q.type];
-    $('prompt').textContent = q.prompt;
-    $('sub').textContent = q.sub;
+    const q = run.queue[0];
+    $('modeBadge').textContent = 'Modus: ' + run.stage.mode;
+    $('ask').textContent = q.ask;
+    $('show').textContent = q.show;
+    $('hint').textContent = q.hint || '';
     $('feedback').classList.add('hidden');
     $('btnNext').classList.add('hidden');
 
@@ -339,8 +402,11 @@
   function answer(btn) {
     if (locked) return;
     locked = true;
-    const q = queue[pos];
+    const q = run.queue.shift();
     const correct = btn.dataset.correct === '1';
+    // Gewertet wird nur der erste Versuch pro Frage
+    const firstTry = !run.tried.has(q.id);
+    run.tried.add(q.id);
 
     document.querySelectorAll('#answers .answer').forEach(b => {
       b.classList.remove('hover:border-emerald-400', 'hover:bg-emerald-50');
@@ -350,19 +416,23 @@
     const fb = $('feedback');
     fb.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-800', 'bg-red-50', 'text-red-900');
     if (correct) {
-      score++;
+      if (firstTry) run.firstTryCorrect++;
+      run.done++;
       streak++;
       if (streak > store.bestStreak) store.bestStreak = streak;
       if (STREAK_MILESTONES.includes(streak)) toast(`🔥 ${streak} richtig in Folge!`);
       fb.classList.add('bg-emerald-50', 'text-emerald-800');
-      fb.innerHTML = '<p class="font-bold">✓ Richtig!</p>';
-      setTimeout(next, 900);
+      fb.innerHTML = '<p class="font-bold">✓ Richtig!</p>' + q.explain;
+      setTimeout(next, 1200);
     } else {
+      if (firstTry) run.wrongItemsArray.push(q);
       streak = 0;
-      mistakes.push(q);
+      // Später in dieser Stufe noch einmal fragen
+      const at = Math.min(run.queue.length, 3 + Math.floor(Math.random() * 3));
+      run.queue.splice(at, 0, q);
       btn.classList.add('border-red-500', 'bg-red-50', 'text-red-800');
       fb.classList.add('bg-red-50', 'text-red-900');
-      fb.innerHTML = `<p class="font-bold">✗ Leider falsch – richtig ist: ${esc(q.correct)}</p>` + q.explain;
+      fb.innerHTML = `<p class="font-bold">✗ Leider falsch – richtig ist: ${esc(q.correct)}</p>` + q.explain + (q.detail || '');
       $('btnNext').classList.remove('hidden');
       $('btnNext').focus();
     }
@@ -372,34 +442,54 @@
 
   function next() {
     if (!locked) return;
-    pos++;
     showQuestion();
   }
 
-  function showDone() {
-    show('done');
-    const total = queue.length;
-    $('doneTitle').textContent = score === total ? '🏆 Optime! Alles richtig!' : score >= total * 0.7 ? '🎉 Bene! Runde geschafft' : '💪 Runde geschafft';
-    $('doneText').textContent = `${score} von ${total} richtig.`;
-    if (score >= total * 0.8 && typeof confetti === 'function') {
-      confetti({ particleCount: 120, spread: 75, origin: { y: 0.6 } });
-    }
+  // ---------- Auswertung ----------
+  const LEVELS = [
+    { title: 'Noch nicht bestanden', text: 'Probiere es gleich nochmal!' },
+    { title: '🥉 Bronze', text: 'Guter Versuch!' },
+    { title: '🥈 Silber', text: 'Klasse! Stufe gemeistert!' },
+    { title: '🥇 Gold', text: 'Meisterleistung!' },
+  ];
 
-    $('mistakes').classList.toggle('hidden', !mistakes.length);
-    $('btnRetry').classList.toggle('hidden', !mistakes.length);
+  function showSummary() {
+    const { stage, firstTryCorrect, totalQuestions, wrongItemsArray } = run;
+    const pct = Math.round(firstTryCorrect / totalQuestions * 100);
+    const stars = starsFor(pct);
+    saveResult(stage, pct);
+
+    $('sumStage').textContent = stage.title;
+    $('sumStars').textContent = starText(stars);
+    $('sumTitle').textContent = LEVELS[stars].title;
+    $('sumPct').textContent = pct + ' %';
+    $('sumText').textContent = `${firstTryCorrect} von ${totalQuestions} richtig im ersten Versuch – ${LEVELS[stars].text}`;
+    if (pct >= PASS_PCT && typeof confetti === 'function') confetti({ particleCount: 120, spread: 75, origin: { y: 0.6 } });
+
+    $('mistakes').classList.toggle('hidden', !wrongItemsArray.length);
     const list = $('mistakeList');
     list.innerHTML = '';
-    mistakes.forEach(q => {
+    wrongItemsArray.forEach(q => {
       const li = document.createElement('li');
       li.className = 'px-3 py-2';
       li.textContent = q.review;
       list.appendChild(li);
     });
+
+    const nextStage = stages[stages.indexOf(stage) + 1];
+    const canGo = pct >= PASS_PCT && nextStage && !nextStage.soon;
+    $('btnNextStage').classList.toggle('hidden', !canGo);
+    if (canGo) {
+      $('btnNextStage').textContent = `Weiter zu Stufe ${nextStage.id} →`;
+      $('btnNextStage').onclick = () => startStage(nextStage);
+    }
+    show('summary');
   }
 
   $('btnNext').onclick = next;
-  $('btnNewRound').onclick = () => startRound(buildRound(), false);
-  $('btnRetry').onclick = () => startRound(shuffle(mistakes), true);
+  $('btnAgain').onclick = () => startStage(run.stage);
+  $('btnToOverview').onclick = renderOverview;
+  $('btnOverview').onclick = renderOverview;
 
   document.addEventListener('keydown', e => {
     if ($('quiz').classList.contains('hidden')) return;
@@ -413,17 +503,17 @@
   ViaTim.loadLessons()
     .then(({ lessons, failed }) => {
       ViaTim.showPartialError($('error'), failed);
-      const sel = ViaTim.getSelection();
+      sel = ViaTim.getSelection();
+      const chosen = ViaTim.selected(lessons, sel);
+      if (chosen.length === lessons.length) sel = ViaTim.ALL;
       $('lessonLabel').textContent = ViaTim.selectionLabel(lessons, sel);
       $('backLink').href = 'index.html?l=' + encodeURIComponent(sel);
-      pools = buildPools(ViaTim.selected(lessons, sel));
-      if (!Object.values(pools).some(qs => qs.length)) {
-        const box = $('error');
-        box.classList.remove('hidden');
-        box.textContent = 'Für diese Auswahl gibt es noch keine Dativ-Daten.';
-        return;
-      }
-      startRound(buildRound(), false);
+      data = prepareData(chosen);
+      // Nur Stufen mit Daten anzeigen; die Freischalt-Kette läuft über diese Liste
+      stages = STAGES
+        .map(st => ({ ...st, count: st.soon ? 0 : st.build().length }))
+        .filter(st => st.soon || st.count > 0);
+      renderOverview();
     })
     .catch(err => ViaTim.showLoadError($('error'), err));
 })();

@@ -46,7 +46,9 @@
       "dativ_sg": "dominō",
       "dativ_pl": "dominīs",
       "bedeutung_sg": "dem Herrn",
-      "bedeutung_pl": "den Herren"
+      "bedeutung_pl": "den Herren",
+      "nom_bedeutung_sg": "der Herr",
+      "nom_bedeutung_pl": "die Herren"
     },
     {
       "nom_sg": "cibus",
@@ -56,7 +58,9 @@
       "dativ_sg": "cibō",
       "dativ_pl": "cibīs",
       "bedeutung_sg": "der Speise",
-      "bedeutung_pl": "den Speisen"
+      "bedeutung_pl": "den Speisen",
+      "nom_bedeutung_sg": "die Speise",
+      "nom_bedeutung_pl": "die Speisen"
     },
     {
       "nom_sg": "mulier",
@@ -66,7 +70,9 @@
       "dativ_sg": "mulierī",
       "dativ_pl": "mulieribus",
       "bedeutung_sg": "der Frau",
-      "bedeutung_pl": "den Frauen"
+      "bedeutung_pl": "den Frauen",
+      "nom_bedeutung_sg": "die Frau",
+      "nom_bedeutung_pl": "die Frauen"
     },
     {
       "nom_sg": "hospes",
@@ -76,7 +82,9 @@
       "dativ_sg": "hospitī",
       "dativ_pl": "hospitibus",
       "bedeutung_sg": "dem Gast",
-      "bedeutung_pl": "den Gästen"
+      "bedeutung_pl": "den Gästen",
+      "nom_bedeutung_sg": "der Gast",
+      "nom_bedeutung_pl": "die Gäste"
     },
     {
       "nom_sg": "ōrātiō",
@@ -86,7 +94,9 @@
       "dativ_sg": "ōrātiōnī",
       "dativ_pl": "ōrātiōnibus",
       "bedeutung_sg": "der Rede",
-      "bedeutung_pl": "den Reden"
+      "bedeutung_pl": "den Reden",
+      "nom_bedeutung_sg": "die Rede",
+      "nom_bedeutung_pl": "die Reden"
     },
     {
       "nom_sg": "mōs",
@@ -96,7 +106,9 @@
       "dativ_sg": "mōrī",
       "dativ_pl": "mōribus",
       "bedeutung_sg": "der Sitte",
-      "bedeutung_pl": "den Sitten / dem Charakter"
+      "bedeutung_pl": "den Sitten / dem Charakter",
+      "nom_bedeutung_sg": "die Sitte",
+      "nom_bedeutung_pl": "die Sitten / der Charakter"
     },
     {
       "nom_sg": "mūnus",
@@ -106,7 +118,9 @@
       "dativ_sg": "mūnerī",
       "dativ_pl": "mūneribus",
       "bedeutung_sg": "der Aufgabe / dem Geschenk",
-      "bedeutung_pl": "den Aufgaben / Geschenken"
+      "bedeutung_pl": "den Aufgaben / Geschenken",
+      "nom_bedeutung_sg": "die Aufgabe / das Geschenk",
+      "nom_bedeutung_pl": "die Aufgaben / Geschenke"
     },
     {
       "nom_sg": "iter",
@@ -116,7 +130,9 @@
       "dativ_sg": "itinerī",
       "dativ_pl": "itineribus",
       "bedeutung_sg": "dem Weg / der Reise",
-      "bedeutung_pl": "den Wegen / Reisen"
+      "bedeutung_pl": "den Wegen / Reisen",
+      "nom_bedeutung_sg": "der Weg / die Reise",
+      "nom_bedeutung_pl": "die Wege / Reisen"
     }
   ],
   "dativ_pronomen": [

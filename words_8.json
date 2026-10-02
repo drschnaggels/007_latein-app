@@ -52,7 +52,9 @@
       "dativ_sg": "lībertō",
       "dativ_pl": "lībertīs",
       "bedeutung_sg": "dem Freigelassenen",
-      "bedeutung_pl": "den Freigelassenen"
+      "bedeutung_pl": "den Freigelassenen",
+      "nom_bedeutung_sg": "der Freigelassene",
+      "nom_bedeutung_pl": "die Freigelassenen"
     },
     {
       "nom_sg": "patrōnus",
@@ -62,7 +64,9 @@
       "dativ_sg": "patrōnō",
       "dativ_pl": "patrōnīs",
       "bedeutung_sg": "dem Patron",
-      "bedeutung_pl": "den Patronen"
+      "bedeutung_pl": "den Patronen",
+      "nom_bedeutung_sg": "der Patron",
+      "nom_bedeutung_pl": "die Patrone"
     },
     {
       "nom_sg": "propinquus",
@@ -72,7 +76,9 @@
       "dativ_sg": "propinquō",
       "dativ_pl": "propinquīs",
       "bedeutung_sg": "dem Verwandten",
-      "bedeutung_pl": "den Verwandten"
+      "bedeutung_pl": "den Verwandten",
+      "nom_bedeutung_sg": "der Verwandte",
+      "nom_bedeutung_pl": "die Verwandten"
     },
     {
       "nom_sg": "via",
@@ -82,7 +88,9 @@
       "dativ_sg": "viae",
       "dativ_pl": "viīs",
       "bedeutung_sg": "der Straße",
-      "bedeutung_pl": "den Straßen"
+      "bedeutung_pl": "den Straßen",
+      "nom_bedeutung_sg": "die Straße",
+      "nom_bedeutung_pl": "die Straßen"
     },
     {
       "nom_sg": "āra",
@@ -92,7 +100,9 @@
       "dativ_sg": "ārae",
       "dativ_pl": "ārīs",
       "bedeutung_sg": "dem Altar",
-      "bedeutung_pl": "den Altären"
+      "bedeutung_pl": "den Altären",
+      "nom_bedeutung_sg": "der Altar",
+      "nom_bedeutung_pl": "die Altäre"
     },
     {
       "nom_sg": "dea",
@@ -102,7 +112,9 @@
       "dativ_sg": "deae",
       "dativ_pl": "deābus / deīs",
       "bedeutung_sg": "der Göttin",
-      "bedeutung_pl": "den Göttinnen"
+      "bedeutung_pl": "den Göttinnen",
+      "nom_bedeutung_sg": "die Göttin",
+      "nom_bedeutung_pl": "die Göttinnen"
     },
     {
       "nom_sg": "mōns",
@@ -112,7 +124,9 @@
       "dativ_sg": "montī",
       "dativ_pl": "montibus",
       "bedeutung_sg": "dem Berg",
-      "bedeutung_pl": "den Bergen"
+      "bedeutung_pl": "den Bergen",
+      "nom_bedeutung_sg": "der Berg",
+      "nom_bedeutung_pl": "die Berge"
     },
     {
       "nom_sg": "vox",
@@ -122,7 +136,9 @@
       "dativ_sg": "vocī",
       "dativ_pl": "vocibus",
       "bedeutung_sg": "der Stimme",
-      "bedeutung_pl": "den Stimmen"
+      "bedeutung_pl": "den Stimmen",
+      "nom_bedeutung_sg": "die Stimme",
+      "nom_bedeutung_pl": "die Stimmen"
     },
     {
       "nom_sg": "gēns",
@@ -132,7 +148,9 @@
       "dativ_sg": "gentī",
       "dativ_pl": "gentibus",
       "bedeutung_sg": "dem Stamm / Volk",
-      "bedeutung_pl": "den Stämmen / Völkern"
+      "bedeutung_pl": "den Stämmen / Völkern",
+      "nom_bedeutung_sg": "der Stamm / das Volk",
+      "nom_bedeutung_pl": "die Stämme / Völker"
     },
     {
       "nom_sg": "parēns",
@@ -142,7 +160,9 @@
       "dativ_sg": "parentī",
       "dativ_pl": "parentibus",
       "bedeutung_sg": "dem Elternteil",
-      "bedeutung_pl": "den Eltern"
+      "bedeutung_pl": "den Eltern",
+      "nom_bedeutung_sg": "das Elternteil",
+      "nom_bedeutung_pl": "die Eltern"
     },
     {
       "nom_sg": "soror",
@@ -152,7 +172,9 @@
       "dativ_sg": "sorōrī",
       "dativ_pl": "sorōribus",
       "bedeutung_sg": "der Schwester",
-      "bedeutung_pl": "den Schwestern"
+      "bedeutung_pl": "den Schwestern",
+      "nom_bedeutung_sg": "die Schwester",
+      "nom_bedeutung_pl": "die Schwestern"
     },
     {
       "nom_sg": "salūs",
@@ -162,7 +184,9 @@
       "dativ_sg": "salūtī",
       "dativ_pl": "salūtibus",
       "bedeutung_sg": "der Gesundheit / Rettung",
-      "bedeutung_pl": "den Rettungen"
+      "bedeutung_pl": "den Rettungen",
+      "nom_bedeutung_sg": "die Gesundheit / Rettung",
+      "nom_bedeutung_pl": "die Rettungen"
     },
     {
       "nom_sg": "pāx",
@@ -172,7 +196,9 @@
       "dativ_sg": "pācī",
       "dativ_pl": "-",
       "bedeutung_sg": "dem Frieden",
-      "bedeutung_pl": "-"
+      "bedeutung_pl": "-",
+      "nom_bedeutung_sg": "der Frieden",
+      "nom_bedeutung_pl": "-"
     },
     {
       "nom_sg": "agmen",
@@ -182,7 +208,9 @@
       "dativ_sg": "agminī",
       "dativ_pl": "agminibus",
       "bedeutung_sg": "dem Zug / Heereszug",
-      "bedeutung_pl": "den Zügen"
+      "bedeutung_pl": "den Zügen",
+      "nom_bedeutung_sg": "der Zug / Heereszug",
+      "nom_bedeutung_pl": "die Züge"
     }
   ],
   "dativ_pronomen": [],
