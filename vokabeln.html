@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vokabeltrainer – Via Tim ad Romam</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="lessons.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+  <main class="max-w-xl mx-auto px-4 py-6 space-y-4">
+    <header class="flex items-center gap-3">
+      <a id="backLink" href="index.html" class="shrink-0 px-3 py-2 rounded-xl bg-white shadow-sm text-sm font-semibold hover:bg-indigo-50">← Startseite</a>
+      <div class="min-w-0">
+        <h1 class="text-xl font-bold truncate">📖 Vokabeltrainer</h1>
+        <p id="lessonLabel" class="text-sm text-slate-500 truncate"></p>
+      </div>
+    </header>
+
+    <!-- Fehler / Hinweis -->
+    <div id="error" class="hidden rounded-xl bg-red-50 border border-red-200 text-red-700 p-4 text-sm"></div>
+
+    <!-- Status -->
+    <section id="status" class="hidden bg-white rounded-2xl shadow p-4 space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <span id="roundLabel" class="text-sm font-semibold px-3 py-1 rounded-full bg-indigo-100 text-indigo-700"></span>
+        <span class="text-sm font-semibold">🔥 <span id="streak">0</span> <span class="text-slate-400 font-normal">(Best: <span id="bestStreak">0</span>)</span></span>
+      </div>
+      <p class="text-center text-lg">Noch <span id="remaining" class="text-3xl font-bold text-indigo-600">0</span> Vokabeln in dieser Runde</p>
+      <div>
+        <div class="flex justify-between text-xs text-slate-500 mb-1">
+          <span>Lektions-Fortschritt</span><span id="pctLabel">0 %</span>
+        </div>
+        <div class="h-3 bg-slate-200 rounded-full overflow-hidden">
+          <div id="pctBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-500" style="width:0%"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quiz-Karte -->
+    <section id="quiz" class="hidden bg-white rounded-2xl shadow p-6 space-y-5">
+      <div class="text-center">
+        <p id="question" class="text-3xl font-bold break-words"></p>
+        <p id="wordStats" class="text-xs text-slate-400 mt-2"></p>
+      </div>
+      <div id="answers" class="grid gap-3"></div>
+    </section>
+
+    <!-- Rundenabschluss -->
+    <section id="done" class="hidden bg-white rounded-2xl shadow p-6 text-center space-y-4">
+      <p id="doneTitle" class="text-2xl font-bold"></p>
+      <p id="doneText" class="text-slate-600"></p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button id="btnRound2" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700">Runde 2: Festigung starten</button>
+        <button id="btnReset" class="px-5 py-3 rounded-xl bg-slate-200 font-semibold hover:bg-slate-300">Fortschritt zurücksetzen</button>
+      </div>
+    </section>
+
+    <p id="resetLink" class="hidden text-center">
+      <button id="btnResetSmall" class="text-xs text-slate-400 underline hover:text-slate-600">Fortschritt dieser Lektion zurücksetzen</button>
+    </p>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-6 px-5 py-3 rounded-xl bg-slate-900 text-white font-semibold shadow-lg opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+<script>
+(() => {
+  const { shuffle } = ViaTim;
+  const STORAGE_KEY = 'latein-app-v1';
+  const ALL = '__all__';
+  const STREAK_MILESTONES = [5, 10, 20, 30, 50];
+
+  const $ = id => document.getElementById(id);
+  let lessons = {};        // { lessonName: [{key, latin, german, lesson}] }
+  let current = null;      // aktuell gewählte Lektion (Name oder ALL)
+  let question = null;     // aktuelles Wort
+  let lastKey = null;
+  let locked = false;
+  let streak = 0;
+
+  // ---------- Speicher ----------
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (s && typeof s === 'object') return { stats: {}, sessions: {}, bestStreak: 0, lastLesson: null, ...s };
+    } catch (e) {}
+    return { stats: {}, sessions: {}, bestStreak: 0, lastLesson: null };
+  }
+  const store = load();
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); } catch (e) {}
+  }
+
+  function session() {
+    if (!store.sessions[current]) {
+      store.sessions[current] = { round: 1, done: [], totalCorrect: 0, milestone10Shown: false };
+    }
+    return store.sessions[current];
+  }
+
+  // ---------- Hilfsfunktionen ----------
+  function pool() {
+    return current === ALL ? Object.values(lessons).flat() : (lessons[current] || []);
+  }
+
+  function openWords() {
+    const done = new Set(session().done);
+    return pool().filter(w => !done.has(w.key));
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.remove('opacity-0');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.add('opacity-0'), 2500);
+  }
+
+  function celebrate() {
+    if (typeof confetti === 'function') {
+      confetti({ particleCount: 120, spread: 75, origin: { y: 0.6 } });
+    }
+  }
+
+  // ---------- Rendering ----------
+  function renderStatus() {
+    const s = session();
+    const n = pool().length;
+    const open = openWords().length;
+    $('roundLabel').textContent = s.round === 1 ? 'Runde 1: Basis' : 'Runde 2: Festigung';
+    $('roundLabel').className = 'text-sm font-semibold px-3 py-1 rounded-full ' +
+      (s.round === 1 ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700');
+    $('remaining').textContent = open;
+    const doneCount = n - open;
+    const pct = n ? Math.round(((s.round === 1 ? 0 : n) + doneCount) / (2 * n) * 100) : 0;
+    $('pctLabel').textContent = pct + ' %';
+    $('pctBar').style.width = pct + '%';
+    $('streak').textContent = streak;
+    $('bestStreak').textContent = store.bestStreak;
+  }
+
+  function show(section) {
+    $('status').classList.remove('hidden');
+    $('quiz').classList.toggle('hidden', section !== 'quiz');
+    $('done').classList.toggle('hidden', section !== 'done');
+    $('resetLink').classList.toggle('hidden', section !== 'quiz');
+  }
+
+  function nextQuestion() {
+    locked = false;
+    renderStatus();
+    let open = openWords();
+    if (open.length === 0) return showRoundDone();
+
+    if (open.length > 1) open = open.filter(w => w.key !== lastKey);
+    question = open[Math.floor(Math.random() * open.length)];
+    lastKey = question.key;
+
+    // Distraktoren ausschließlich aus der gewählten Lektion, eindeutige Bedeutungen
+    const seen = new Set([question.german.trim().toLowerCase()]);
+    const distractors = [];
+    for (const w of shuffle(pool())) {
+      const g = w.german.trim().toLowerCase();
+      if (seen.has(g)) continue;
+      seen.add(g);
+      distractors.push(w);
+      if (distractors.length === 3) break;
+    }
+    const options = shuffle([question, ...distractors]);
+
+    $('question').textContent = question.latin;
+    const st = store.stats[question.key] || { right: 0, wrong: 0 };
+    $('wordStats').textContent = `schon ${st.right}× richtig / ${st.wrong}× falsch`;
+
+    const box = $('answers');
+    box.innerHTML = '';
+    options.forEach((opt, i) => {
+      const b = document.createElement('button');
+      b.className = 'answer w-full text-left px-4 py-3 rounded-xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 transition font-medium';
+      b.innerHTML = `<span class="text-slate-400 mr-2">${i + 1}</span>`;
+      b.appendChild(document.createTextNode(opt.german));
+      b.dataset.correct = opt === question ? '1' : '0';
+      b.onclick = () => answer(b);
+      box.appendChild(b);
+    });
+    show('quiz');
+  }
+
+  function answer(btn) {
+    if (locked) return;
+    locked = true;
+    const s = session();
+    const correct = btn.dataset.correct === '1';
+    const st = store.stats[question.key] || (store.stats[question.key] = { right: 0, wrong: 0 });
+
+    document.querySelectorAll('#answers .answer').forEach(b => {
+      b.classList.remove('hover:border-indigo-400', 'hover:bg-indigo-50');
+      if (b.dataset.correct === '1') b.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-800');
+    });
+
+    if (correct) {
+      st.right++;
+      streak++;
+      s.totalCorrect++;
+      if (!s.done.includes(question.key)) s.done.push(question.key);
+      if (streak > store.bestStreak) store.bestStreak = streak;
+
+      if (!s.milestone10Shown && s.totalCorrect >= 10) {
+        s.milestone10Shown = true;
+        toast('Erste 10 geschafft! 👍');
+      } else if (STREAK_MILESTONES.includes(streak)) {
+        toast(`🔥 ${streak} richtig in Folge!`);
+      }
+    } else {
+      st.wrong++;
+      streak = 0;
+      btn.classList.add('border-red-500', 'bg-red-50', 'text-red-800');
+    }
+    save();
+    renderStatus();
+    setTimeout(nextQuestion, correct ? 700 : 1500);
+  }
+
+  function showRoundDone() {
+    const s = session();
+    question = null;
+    show('done');
+    celebrate();
+    if (s.round === 1) {
+      $('doneTitle').textContent = '🎉 Runde 1 geschafft!';
+      $('doneText').textContent = 'Jede Vokabel wurde einmal richtig beantwortet. Jetzt festigen?';
+      $('btnRound2').classList.remove('hidden');
+      toast('Runde 1 abgeschlossen! 🎉');
+    } else {
+      $('doneTitle').textContent = '🏆 Lektion gemeistert!';
+      $('doneText').textContent = 'Jede Vokabel wurde zweimal richtig beantwortet. Optime!';
+      $('btnRound2').classList.add('hidden');
+      toast('Festigung abgeschlossen! 🏆');
+    }
+  }
+
+  // ---------- Aktionen ----------
+  function selectLesson(name) {
+    current = name;
+    lastKey = null;
+    // Nicht mehr existierende Wörter aus dem Rundenstand entfernen
+    const keys = new Set(pool().map(w => w.key));
+    session().done = session().done.filter(k => keys.has(k));
+    save();
+    nextQuestion();
+  }
+
+  function startRound2() {
+    const s = session();
+    s.round = 2;
+    s.done = [];
+    save();
+    nextQuestion();
+  }
+
+  function resetLesson() {
+    delete store.sessions[current];
+    streak = 0;
+    save();
+    toast('Fortschritt zurückgesetzt');
+    nextQuestion();
+  }
+
+  $('btnRound2').onclick = startRound2;
+  $('btnReset').onclick = resetLesson;
+  $('btnResetSmall').onclick = resetLesson;
+
+  document.addEventListener('keydown', e => {
+    if ($('quiz').classList.contains('hidden')) return;
+    const n = parseInt(e.key, 10);
+    const btns = document.querySelectorAll('#answers .answer');
+    if (n >= 1 && n <= btns.length) btns[n - 1].click();
+  });
+
+  // ---------- Start ----------
+  ViaTim.loadLessons()
+    .then(({ lessons: all, failed }) => {
+      ViaTim.showPartialError($('error'), failed);
+      // Lektionsname (titel) bleibt Schlüssel für Statistik und Rundenstand
+      all.forEach(l => {
+        lessons[l.titel] = l.vokabeln.map(w => ({
+          key: `${l.titel}::${w.id}`, latin: String(w.latin), german: String(w.german), lesson: l.titel,
+        }));
+      });
+      const sel = ViaTim.getSelection();
+      const chosen = ViaTim.selected(all, sel);
+      $('lessonLabel').textContent = ViaTim.selectionLabel(all, sel);
+      $('backLink').href = 'index.html?l=' + encodeURIComponent(sel);
+      selectLesson(chosen.length === 1 && all.length > 1 ? chosen[0].titel : ALL);
+    })
+    .catch(err => ViaTim.showLoadError($('error'), err));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dativ-Basics – Via Tim ad Romam</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="lessons.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+  <main class="max-w-xl mx-auto px-4 py-6 space-y-4">
+    <header class="flex items-center gap-3">
+      <a id="backLink" href="index.html" class="shrink-0 px-3 py-2 rounded-xl bg-white shadow-sm text-sm font-semibold hover:bg-emerald-50">← Startseite</a>
+      <div class="min-w-0">
+        <h1 class="text-xl font-bold truncate">🎯 Dativ-Basics</h1>
+        <p id="lessonLabel" class="text-sm text-slate-500 truncate"></p>
+      </div>
+    </header>
+
+    <!-- Fehler / Hinweis -->
+    <div id="error" class="hidden rounded-xl bg-red-50 border border-red-200 text-red-700 p-4 text-sm"></div>
+
+    <!-- Status -->
+    <section id="status" class="hidden bg-white rounded-2xl shadow p-4 space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <span id="roundLabel" class="text-sm font-semibold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700"></span>
+        <span class="text-sm font-semibold">🔥 <span id="streak">0</span> <span class="text-slate-400 font-normal">(Best: <span id="bestStreak">0</span>)</span></span>
+      </div>
+      <div>
+        <div class="flex justify-between text-xs text-slate-500 mb-1">
+          <span>Frage <span id="qNum">0</span> von <span id="qTotal">0</span></span><span><span id="score">0</span> richtig</span>
+        </div>
+        <div class="h-3 bg-slate-200 rounded-full overflow-hidden">
+          <div id="pctBar" class="h-full bg-gradient-to-r from-emerald-500 to-indigo-500 transition-all duration-500" style="width:0%"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quiz-Karte -->
+    <section id="quiz" class="hidden bg-white rounded-2xl shadow p-6 space-y-5">
+      <div class="text-center space-y-2">
+        <span id="typeBadge" class="inline-block text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-500"></span>
+        <p id="prompt" class="text-2xl font-bold break-words"></p>
+        <p id="sub" class="text-sm text-slate-500"></p>
+      </div>
+      <div id="answers" class="grid gap-3"></div>
+      <div id="feedback" class="hidden rounded-xl p-4 space-y-3 text-sm"></div>
+      <button id="btnNext" class="hidden w-full px-5 py-3 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-900">Weiter ↵</button>
+    </section>
+
+    <!-- Rundenabschluss -->
+    <section id="done" class="hidden bg-white rounded-2xl shadow p-6 space-y-4">
+      <div class="text-center space-y-1">
+        <p id="doneTitle" class="text-2xl font-bold"></p>
+        <p id="doneText" class="text-slate-600"></p>
+      </div>
+      <div id="mistakes" class="hidden space-y-2">
+        <p class="text-sm font-semibold text-slate-500">Das solltest du dir noch einmal ansehen:</p>
+        <ul id="mistakeList" class="text-sm divide-y divide-slate-100 border border-slate-200 rounded-xl"></ul>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button id="btnNewRound" class="px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700">Neue Runde</button>
+        <button id="btnRetry" class="px-5 py-3 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600">Fehler wiederholen</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-6 px-5 py-3 rounded-xl bg-slate-900 text-white font-semibold shadow-lg opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+<script>
+(() => {
+  const { esc, shuffle } = ViaTim;
+  const STORAGE_KEY = 'via-tim-dativ-v1';
+  const ROUND_SIZE = 10;
+  const STREAK_MILESTONES = [5, 10, 20, 30, 50];
+
+  // Ablenker für Pronomen-Fragen: nur deutsche Bedeutungen bzw. Kasusangaben,
+  // keine lateinischen Formen aus anderen Lektionen
+  const PRONOUN_MEANINGS = ['uns', 'dir', 'mir', 'ihnen', 'ihr', 'dich', 'euer'];
+  const CASES = ['Dativ Singular', 'Dativ Plural', 'Akkusativ Singular', 'Akkusativ Plural', 'Nominativ Plural', 'Genitiv Plural'];
+  // Verben, die ein (zusätzliches) Dativ-Objekt haben können – taugen nicht als „falsche“ Antwort
+  const NOT_DISTRACTOR = ['dare', 'praebēre', 'dēbēre', 'narrāre', 'dīcere'];
+
+  const $ = id => document.getElementById(id);
+  let pools = {};          // { typ: [Frage] } – alle Fragen der gewählten Lektionen
+  let queue = [];          // Fragen der aktuellen Runde
+  let pos = 0;
+  let score = 0;
+  let streak = 0;
+  let mistakes = [];
+  let isRetry = false;
+  let locked = false;
+
+  // ---------- Speicher ----------
+  const store = (() => {
+    try {
+      const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (s && typeof s === 'object') return { bestStreak: 0, ...s };
+    } catch (e) {}
+    return { bestStreak: 0 };
+  })();
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); } catch (e) {}
+  }
+
+  // ---------- Hilfsfunktionen ----------
+  const norm = s => String(s).trim().toLowerCase();
+  const valid = v => v && v !== '-';
+
+  // Bis zu n Ablenker: zuerst aus primary, dann aus filler; keine Dubletten, nie die richtige Antwort
+  function distract(correct, primary, filler = [], n = 3) {
+    const seen = new Set([norm(correct)]);
+    const out = [];
+    for (const c of [...shuffle(primary), ...shuffle(filler)]) {
+      if (!valid(c) || seen.has(norm(c))) continue;
+      seen.add(norm(c));
+      out.push(c);
+      if (out.length === n) break;
+    }
+    return out;
+  }
+
+  const verbHead = latin => String(latin).replace(/\(.*?\)/g, '').trim();
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.remove('opacity-0');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.add('opacity-0'), 2500);
+  }
+
+  // ---------- Erklärungen ----------
+  function nounForms(n) {
+    return [
+      ['Nominativ Singular', n.nom_sg], ['Genitiv Singular', n.genitiv_sg], ['Dativ Singular', n.dativ_sg],
+      ['Nominativ Plural', n.nom_pl], ['Dativ Plural', n.dativ_pl],
+    ].filter(([, f]) => valid(f));
+  }
+
+  function nounRule(n) {
+    const d = n.deklination || '';
+    if (d.startsWith('a-')) return 'a-Deklination: Dativ Singular auf <b>-ae</b>, Dativ Plural auf <b>-īs</b>. ' +
+      'Achtung: -ae ist auch Genitiv Singular und Nominativ Plural – erst der Satz zeigt, welcher Fall gemeint ist.';
+    if (d.startsWith('o-')) return 'o-Deklination: Dativ Singular auf <b>-ō</b>, Dativ Plural auf <b>-īs</b>.';
+    if (d.startsWith('3')) {
+      const stem = String(n.genitiv_sg).replace(/is$/, '');
+      return `3. Deklination: Den Stamm erkennst du am Genitiv (${esc(n.genitiv_sg)} → <b>${esc(stem)}-</b>). ` +
+        'Daran hängt im Dativ Singular <b>-ī</b>, im Dativ Plural <b>-ibus</b>.';
+    }
+    return esc(d);
+  }
+
+  function nounExplain(n) {
+    const rows = nounForms(n).map(([label, f]) =>
+      `<tr class="${label.startsWith('Dativ') ? 'font-semibold' : 'text-slate-500'}"><td class="pr-3">${label}</td><td>${esc(f)}</td></tr>`).join('');
+    const extra = String(n.dativ_pl).includes('/')
+      ? ` Bei <b>${esc(n.nom_sg)}</b> gibt es zwei Formen im Dativ Plural: ${esc(n.dativ_pl)}.` : '';
+    return `<p>${nounRule(n)}${extra}</p><table class="text-sm">${rows}</table>`;
+  }
+
+  const verbExplain = v =>
+    `<p><b>${esc(v.konstruktion)}</b> – ${esc(v.german)}</p>` +
+    (v.beispiel ? `<p>Beispiel: <i>${esc(v.beispiel)}</i></p>` : '') +
+    '<p>Im Lateinischen steht nach diesem Verb der Dativ (Frage: <i>Wem?</i>) – auch wenn man im Deutschen manchmal anders fragt.</p>';
+
+  // ---------- Fragen erzeugen (nur aus den gewählten Lektionen) ----------
+  function buildPools(chosen) {
+    const nouns = chosen.flatMap(l => l.dativ_substantive).filter(n => n && valid(n.nom_sg) && valid(n.dativ_sg));
+    const pronouns = chosen.flatMap(l => l.dativ_pronomen).filter(p => p && p.form && p.bedeutung);
+    const verbs = chosen.flatMap(l => l.dativ_verben).filter(v => v && v.latin && v.german);
+
+    // Normale Verben aus dem Wortschatz als Ablenker (ohne Dativ-Verben und deren Bestandteile)
+    const dativWords = new Set(verbs.flatMap(v => verbHead(v.latin).split(/\s+/)));
+    const otherVerbs = chosen.flatMap(l => l.vokabeln)
+      .map(w => ({ head: verbHead(w.latin), german: w.german }))
+      .filter(w => {
+        const words = w.head.split(/\s+/);
+        return words.some(x => /re$/.test(x)) &&
+          !words.some(x => dativWords.has(x) || NOT_DISTRACTOR.includes(x));
+      });
+
+    const p = { form: [], bestimmen: [], bedeutung: [], pronomen: [], verb: [] };
+    const add = (type, q) => { if (q.options.length >= 2) p[type].push({ type, ...q }); };
+
+    nouns.forEach(n => {
+      const own = nounForms(n);
+      const head = `${n.nom_sg}, ${n.genitiv_sg} · ${n.deklination}`;
+
+      // Dativform bilden
+      [['sg', 'Dativ Singular'], ['pl', 'Dativ Plural']].forEach(([num, label]) => {
+        const correct = n['dativ_' + num];
+        if (!valid(correct)) return;
+        const filler = nouns.filter(o => o !== n).map(o => o['dativ_' + num]);
+        add('form', {
+          prompt: `${label} von „${n.nom_sg}“?`, sub: head, correct,
+          options: [correct, ...distract(correct, own.map(([, f]) => f), filler)],
+          explain: nounExplain(n), review: `${label} von ${n.nom_sg}`,
+        });
+
+        // Dativform übersetzen
+        const meaning = n['bedeutung_' + num];
+        if (!valid(meaning)) return;
+        const otherMeanings = nouns.filter(o => o !== n).flatMap(o => [o.bedeutung_sg, o.bedeutung_pl]);
+        add('bedeutung', {
+          prompt: `Was bedeutet „${correct}“?`, sub: `Dativform von ${n.nom_sg}`, correct: meaning,
+          options: [meaning, ...distract(meaning, [n[num === 'sg' ? 'bedeutung_pl' : 'bedeutung_sg']], otherMeanings)],
+          explain: nounExplain(n), review: `${correct} = ${meaning}`,
+        });
+      });
+
+      // Form bestimmen – nur bei eindeutigen Formen (viae z. B. ist mehrdeutig)
+      own.forEach(([label, form]) => {
+        if (own.filter(([, f]) => norm(f) === norm(form)).length > 1) return;
+        add('bestimmen', {
+          prompt: `Bestimme: „${form}“`, sub: `von ${n.nom_sg}, ${n.genitiv_sg}`, correct: label,
+          options: [label, ...distract(label, own.map(([l]) => l))],
+          explain: nounExplain(n), review: `${form} = ${label}`,
+        });
+      });
+    });
+
+    pronouns.forEach(pr => {
+      const explain = `<p><b>${esc(pr.form)}</b> ist ${esc(pr.kasus)} – „${esc(pr.bedeutung)}“.</p>` +
+        `<p>Der Dativ antwortet auf die Frage <i>Wem?</i> → ${esc(pr.bedeutung)}.</p>`;
+      add('pronomen', {
+        prompt: `Was bedeutet „${pr.form}“?`, sub: 'Pronomen', correct: pr.bedeutung,
+        options: [pr.bedeutung, ...distract(pr.bedeutung, PRONOUN_MEANINGS)],
+        explain, review: `${pr.form} = ${pr.bedeutung}`,
+      });
+      if (pr.kasus) add('pronomen', {
+        prompt: `Bestimme: „${pr.form}“`, sub: 'Pronomen', correct: pr.kasus,
+        options: [pr.kasus, ...distract(pr.kasus, CASES)],
+        explain, review: `${pr.form} = ${pr.kasus}`,
+      });
+    });
+
+    verbs.forEach(v => {
+      add('verb', {
+        prompt: 'Welches Verb verlangt den Dativ?', sub: 'Nur eine Antwort ist richtig.', correct: v.latin,
+        options: [v.latin, ...distract(v.latin, otherVerbs.map(o => o.head))],
+        explain: verbExplain(v), review: v.konstruktion || v.latin,
+      });
+      add('verb', {
+        prompt: `Was bedeutet „${v.konstruktion || v.latin}“?`, sub: 'Verb mit Dativ', correct: v.german,
+        options: [v.german, ...distract(v.german, verbs.filter(o => o !== v).map(o => o.german), otherVerbs.map(o => o.german))],
+        explain: verbExplain(v), review: `${v.latin} = ${v.german}`,
+      });
+
+      // Beispiel ergänzen: Dativ-Objekt einsetzen – nur wenn das Substantiv in den gewählten Lektionen vorkommt
+      const b = String(v.beispiel || '');
+      const at = b.indexOf(v.latin);
+      const obj = at > 0 ? b.slice(0, at).trim() : '';
+      const noun = nouns.find(n => n.dativ_sg === obj || n.dativ_pl === obj);
+      if (!noun) return;
+      const trans = (b.match(/\(([^)]*)\)/) || [])[1] || '';
+      add('verb', {
+        prompt: `___ ${v.latin}`, sub: trans ? `„${trans}“` : 'Ergänze den Dativ.', correct: obj,
+        options: [obj, ...distract(obj, nounForms(noun).map(([, f]) => f))],
+        explain: verbExplain(v) + nounExplain(noun), review: b,
+      });
+    });
+
+    return p;
+  }
+
+  const TYPE_LABELS = {
+    form: 'Substantiv · Dativ bilden', bestimmen: 'Substantiv · Form bestimmen',
+    bedeutung: 'Substantiv · Übersetzen', pronomen: 'Pronomen', verb: 'Verb + Dativ',
+  };
+
+  // Runde zusammenstellen: Fragetypen möglichst gleichmäßig mischen
+  function buildRound() {
+    const left = Object.fromEntries(Object.entries(pools).map(([t, qs]) => [t, shuffle(qs)]));
+    const round = [];
+    while (round.length < ROUND_SIZE) {
+      const types = Object.keys(left).filter(t => left[t].length);
+      if (!types.length) break;
+      round.push(left[types[Math.floor(Math.random() * types.length)]].pop());
+    }
+    return round;
+  }
+
+  // ---------- Ablauf ----------
+  function show(section) {
+    $('status').classList.remove('hidden');
+    $('quiz').classList.toggle('hidden', section !== 'quiz');
+    $('done').classList.toggle('hidden', section !== 'done');
+  }
+
+  function renderStatus() {
+    $('roundLabel').textContent = isRetry ? 'Fehler-Runde' : 'Dativ-Runde';
+    $('qNum').textContent = Math.min(pos + 1, queue.length);
+    $('qTotal').textContent = queue.length;
+    $('score').textContent = score;
+    $('pctBar').style.width = (queue.length ? Math.round(pos / queue.length * 100) : 0) + '%';
+    $('streak').textContent = streak;
+    $('bestStreak').textContent = store.bestStreak;
+  }
+
+  function startRound(questions, retry) {
+    queue = questions;
+    isRetry = retry;
+    pos = 0;
+    score = 0;
+    mistakes = [];
+    showQuestion();
+  }
+
+  function showQuestion() {
+    locked = false;
+    renderStatus();
+    if (pos >= queue.length) return showDone();
+    const q = queue[pos];
+
+    $('typeBadge').textContent = TYPE_LABELS[q.type];
+    $('prompt').textContent = q.prompt;
+    $('sub').textContent = q.sub;
+    $('feedback').classList.add('hidden');
+    $('btnNext').classList.add('hidden');
+
+    const box = $('answers');
+    box.innerHTML = '';
+    shuffle(q.options).forEach((opt, i) => {
+      const b = document.createElement('button');
+      b.className = 'answer w-full text-left px-4 py-3 rounded-xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 transition font-medium';
+      b.innerHTML = `<span class="text-slate-400 mr-2">${i + 1}</span>`;
+      b.appendChild(document.createTextNode(opt));
+      b.dataset.correct = opt === q.correct ? '1' : '0';
+      b.onclick = () => answer(b);
+      box.appendChild(b);
+    });
+    show('quiz');
+  }
+
+  function answer(btn) {
+    if (locked) return;
+    locked = true;
+    const q = queue[pos];
+    const correct = btn.dataset.correct === '1';
+
+    document.querySelectorAll('#answers .answer').forEach(b => {
+      b.classList.remove('hover:border-emerald-400', 'hover:bg-emerald-50');
+      if (b.dataset.correct === '1') b.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-800');
+    });
+
+    const fb = $('feedback');
+    fb.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-800', 'bg-red-50', 'text-red-900');
+    if (correct) {
+      score++;
+      streak++;
+      if (streak > store.bestStreak) store.bestStreak = streak;
+      if (STREAK_MILESTONES.includes(streak)) toast(`🔥 ${streak} richtig in Folge!`);
+      fb.classList.add('bg-emerald-50', 'text-emerald-800');
+      fb.innerHTML = '<p class="font-bold">✓ Richtig!</p>';
+      setTimeout(next, 900);
+    } else {
+      streak = 0;
+      mistakes.push(q);
+      btn.classList.add('border-red-500', 'bg-red-50', 'text-red-800');
+      fb.classList.add('bg-red-50', 'text-red-900');
+      fb.innerHTML = `<p class="font-bold">✗ Leider falsch – richtig ist: ${esc(q.correct)}</p>` + q.explain;
+      $('btnNext').classList.remove('hidden');
+      $('btnNext').focus();
+    }
+    save();
+    renderStatus();
+  }
+
+  function next() {
+    if (!locked) return;
+    pos++;
+    showQuestion();
+  }
+
+  function showDone() {
+    show('done');
+    const total = queue.length;
+    $('doneTitle').textContent = score === total ? '🏆 Optime! Alles richtig!' : score >= total * 0.7 ? '🎉 Bene! Runde geschafft' : '💪 Runde geschafft';
+    $('doneText').textContent = `${score} von ${total} richtig.`;
+    if (score >= total * 0.8 && typeof confetti === 'function') {
+      confetti({ particleCount: 120, spread: 75, origin: { y: 0.6 } });
+    }
+
+    $('mistakes').classList.toggle('hidden', !mistakes.length);
+    $('btnRetry').classList.toggle('hidden', !mistakes.length);
+    const list = $('mistakeList');
+    list.innerHTML = '';
+    mistakes.forEach(q => {
+      const li = document.createElement('li');
+      li.className = 'px-3 py-2';
+      li.textContent = q.review;
+      list.appendChild(li);
+    });
+  }
+
+  $('btnNext').onclick = next;
+  $('btnNewRound').onclick = () => startRound(buildRound(), false);
+  $('btnRetry').onclick = () => startRound(shuffle(mistakes), true);
+
+  document.addEventListener('keydown', e => {
+    if ($('quiz').classList.contains('hidden')) return;
+    if (e.key === 'Enter' && !$('btnNext').classList.contains('hidden')) { e.preventDefault(); return next(); }
+    const n = parseInt(e.key, 10);
+    const btns = document.querySelectorAll('#answers .answer');
+    if (n >= 1 && n <= btns.length) btns[n - 1].click();
+  });
+
+  // ---------- Start ----------
+  ViaTim.loadLessons()
+    .then(({ lessons, failed }) => {
+      ViaTim.showPartialError($('error'), failed);
+      const sel = ViaTim.getSelection();
+      $('lessonLabel').textContent = ViaTim.selectionLabel(lessons, sel);
+      $('backLink').href = 'index.html?l=' + encodeURIComponent(sel);
+      pools = buildPools(ViaTim.selected(lessons, sel));
+      if (!Object.values(pools).some(qs => qs.length)) {
+        const box = $('error');
+        box.classList.remove('hidden');
+        box.textContent = 'Für diese Auswahl gibt es noch keine Dativ-Daten.';
+        return;
+      }
+      startRound(buildRound(), false);
+    })
+    .catch(err => ViaTim.showLoadError($('error'), err));
+})();
+</script>
+</body>
+</html>

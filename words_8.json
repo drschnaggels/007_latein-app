@@ -1,204 +1,190 @@
 {
-  "Lektion 8": [
+  "lektion": 8,
+  "titel": "Lektion 8",
+  "vokabeln": [
+    { "id": 801, "latin": "venīre (veniō)", "german": "kommen" },
+    { "id": 802, "latin": "lībertus", "german": "Freigelassener" },
+    { "id": 803, "latin": "negotium", "german": "Aufgabe, Geschäft, Angelegenheit" },
+    { "id": 804, "latin": "agere (agō)", "german": "handeln, treiben, verhandeln" },
+    { "id": 805, "latin": "vox (vocis f)", "german": "Äußerung, Laut, Stimme" },
+    { "id": 806, "latin": "audīre (audiō)", "german": "hören" },
+    { "id": 807, "latin": "patrōnus", "german": "Patron, (Schutz-)Herr" },
+    { "id": 808, "latin": "via", "german": "Straße, Weg" },
+    { "id": 809, "latin": "mōns (montis m)", "german": "Berg" },
+    { "id": 810, "latin": "pervenīre ad/in (perveniō)", "german": "kommen zu/nach" },
+    { "id": 811, "latin": "dūcere (dūcō)", "german": "führen, ziehen" },
+    { "id": 812, "latin": "propinquus", "german": "Verwandter" },
+    { "id": 813, "latin": "gēns (gentis f)", "german": "Familienverband, Stamm, Volk" },
+    { "id": 814, "latin": "parēns (parentis m/f)", "german": "Vater, Mutter" },
+    { "id": 815, "latin": "parentēs (parentum m Pl.)", "german": "Eltern" },
+    { "id": 816, "latin": "soror (sororis f)", "german": "Schwester" },
+    { "id": 817, "latin": "āra", "german": "Altar" },
+    { "id": 818, "latin": "gaudium", "german": "Freude" },
+    { "id": 819, "latin": "dea", "german": "Göttin" },
+    { "id": 820, "latin": "salūs (salūtis f)", "german": "Gesundheit, Glück, Rettung, Gruß" },
+    { "id": 821, "latin": "pāx (pācis f)", "german": "Friede" },
+    { "id": 822, "latin": "ōrāre (ōrō)", "german": "bitten, beten" },
+    { "id": 823, "latin": "agmen (agminis n)", "german": "(Heeres-)Zug" },
+    { "id": 824, "latin": "domum", "german": "nach Hause" },
+    { "id": 825, "latin": "currere", "german": "eilen, laufen" },
+    { "id": 826, "latin": "consistere", "german": "haltmachen, sich aufstellen" },
+    { "id": 827, "latin": "quod", "german": "dass, weil" },
+    { "id": 828, "latin": "petere", "german": "(auf)suchen, (er)streben, bitten, verlangen" },
+    { "id": 829, "latin": "intrāre", "german": "betreten, eintreten" },
+    { "id": 830, "latin": "dīcere", "german": "sagen, sprechen" },
+    { "id": 831, "latin": "dēnique", "german": "schließlich, zuletzt" },
+    { "id": 832, "latin": "dēbēre", "german": "müssen, sollen; schulden" },
+    { "id": 833, "latin": "Decimus", "german": "Decimus (männlicher Eigenname)" },
+    { "id": 834, "latin": "mōns Esquilīnus", "german": "der Esquilin (einer der sieben Hügel Roms)" },
+    { "id": 835, "latin": "gēns Aquīlia", "german": "die (adlige) Familie der Aquilier" },
+    { "id": 836, "latin": "Larēs (Larum m Pl.)", "german": "die Laren (Gottheiten für Haus und Familie)" },
+    { "id": 837, "latin": "Capitolium", "german": "das Kapitol (einer der sieben Hügel Roms)" },
+    { "id": 838, "latin": "Iuppiter (Iovis m)", "german": "Jupiter (höchster Gott der Römer)" },
+    { "id": 839, "latin": "Iūno (Jūnōnis f)", "german": "Juno (Gemahlin Jupiters)" },
+    { "id": 840, "latin": "Aquīlii (Aquīliōrum m Pl.)", "german": "die Aquilier" }
+  ],
+  "dativ_substantive": [
     {
-      "id": 801,
-      "latin": "venīre (veniō)",
-      "german": "kommen"
+      "nom_sg": "lībertus",
+      "nom_pl": "lībertī",
+      "genitiv_sg": "lībertī",
+      "deklination": "o-Deklination",
+      "dativ_sg": "lībertō",
+      "dativ_pl": "lībertīs",
+      "bedeutung_sg": "dem Freigelassenen",
+      "bedeutung_pl": "den Freigelassenen"
     },
     {
-      "id": 802,
-      "latin": "lībertus",
-      "german": "Freigelassener"
+      "nom_sg": "patrōnus",
+      "nom_pl": "patrōnī",
+      "genitiv_sg": "patrōnī",
+      "deklination": "o-Deklination",
+      "dativ_sg": "patrōnō",
+      "dativ_pl": "patrōnīs",
+      "bedeutung_sg": "dem Patron",
+      "bedeutung_pl": "den Patronen"
     },
     {
-      "id": 803,
-      "latin": "negotium",
-      "german": "Aufgabe, Geschäft, Angelegenheit"
+      "nom_sg": "propinquus",
+      "nom_pl": "propinquī",
+      "genitiv_sg": "propinquī",
+      "deklination": "o-Deklination",
+      "dativ_sg": "propinquō",
+      "dativ_pl": "propinquīs",
+      "bedeutung_sg": "dem Verwandten",
+      "bedeutung_pl": "den Verwandten"
     },
     {
-      "id": 804,
-      "latin": "agere (agō)",
-      "german": "handeln, treiben, verhandeln"
+      "nom_sg": "via",
+      "nom_pl": "viae",
+      "genitiv_sg": "viae",
+      "deklination": "a-Deklination",
+      "dativ_sg": "viae",
+      "dativ_pl": "viīs",
+      "bedeutung_sg": "der Straße",
+      "bedeutung_pl": "den Straßen"
     },
     {
-      "id": 805,
-      "latin": "vox (vocis f)",
-      "german": "Äußerung, Laut, Stimme"
+      "nom_sg": "āra",
+      "nom_pl": "ārae",
+      "genitiv_sg": "ārae",
+      "deklination": "a-Deklination",
+      "dativ_sg": "ārae",
+      "dativ_pl": "ārīs",
+      "bedeutung_sg": "dem Altar",
+      "bedeutung_pl": "den Altären"
     },
     {
-      "id": 806,
-      "latin": "audīre (audiō)",
-      "german": "hören"
+      "nom_sg": "dea",
+      "nom_pl": "deae",
+      "genitiv_sg": "deae",
+      "deklination": "a-Deklination",
+      "dativ_sg": "deae",
+      "dativ_pl": "deābus / deīs",
+      "bedeutung_sg": "der Göttin",
+      "bedeutung_pl": "den Göttinnen"
     },
     {
-      "id": 807,
-      "latin": "patrōnus",
-      "german": "Patron, (Schutz-)Herr"
+      "nom_sg": "mōns",
+      "nom_pl": "montēs",
+      "genitiv_sg": "montis",
+      "deklination": "3. Deklination",
+      "dativ_sg": "montī",
+      "dativ_pl": "montibus",
+      "bedeutung_sg": "dem Berg",
+      "bedeutung_pl": "den Bergen"
     },
     {
-      "id": 808,
-      "latin": "via",
-      "german": "Straße, Weg"
+      "nom_sg": "vox",
+      "nom_pl": "vocēs",
+      "genitiv_sg": "vocis",
+      "deklination": "3. Deklination",
+      "dativ_sg": "vocī",
+      "dativ_pl": "vocibus",
+      "bedeutung_sg": "der Stimme",
+      "bedeutung_pl": "den Stimmen"
     },
     {
-      "id": 809,
-      "latin": "mōns (montis m)",
-      "german": "Berg"
+      "nom_sg": "gēns",
+      "nom_pl": "gentēs",
+      "genitiv_sg": "gentis",
+      "deklination": "3. Deklination",
+      "dativ_sg": "gentī",
+      "dativ_pl": "gentibus",
+      "bedeutung_sg": "dem Stamm / Volk",
+      "bedeutung_pl": "den Stämmen / Völkern"
     },
     {
-      "id": 810,
-      "latin": "pervenīre ad/in (perveniō)",
-      "german": "kommen zu/nach"
+      "nom_sg": "parēns",
+      "nom_pl": "parentēs",
+      "genitiv_sg": "parentis",
+      "deklination": "3. Deklination",
+      "dativ_sg": "parentī",
+      "dativ_pl": "parentibus",
+      "bedeutung_sg": "dem Elternteil",
+      "bedeutung_pl": "den Eltern"
     },
     {
-      "id": 811,
-      "latin": "dūcere (dūcō)",
-      "german": "führen, ziehen"
+      "nom_sg": "soror",
+      "nom_pl": "sorōrēs",
+      "genitiv_sg": "sorōris",
+      "deklination": "3. Deklination",
+      "dativ_sg": "sorōrī",
+      "dativ_pl": "sorōribus",
+      "bedeutung_sg": "der Schwester",
+      "bedeutung_pl": "den Schwestern"
     },
     {
-      "id": 812,
-      "latin": "propinquus",
-      "german": "Verwandter"
+      "nom_sg": "salūs",
+      "nom_pl": "salūtēs",
+      "genitiv_sg": "salūtis",
+      "deklination": "3. Deklination",
+      "dativ_sg": "salūtī",
+      "dativ_pl": "salūtibus",
+      "bedeutung_sg": "der Gesundheit / Rettung",
+      "bedeutung_pl": "den Rettungen"
     },
     {
-      "id": 813,
-      "latin": "gēns (gentis f)",
-      "german": "Familienverband, Stamm, Volk"
+      "nom_sg": "pāx",
+      "nom_pl": "-",
+      "genitiv_sg": "pācis",
+      "deklination": "3. Deklination",
+      "dativ_sg": "pācī",
+      "dativ_pl": "-",
+      "bedeutung_sg": "dem Frieden",
+      "bedeutung_pl": "-"
     },
     {
-      "id": 814,
-      "latin": "parēns (parentis m/f)",
-      "german": "Vater, Mutter"
-    },
-    {
-      "id": 815,
-      "latin": "parentēs (parentum m Pl.)",
-      "german": "Eltern"
-    },
-    {
-      "id": 816,
-      "latin": "soror (sororis f)",
-      "german": "Schwester"
-    },
-    {
-      "id": 817,
-      "latin": "āra",
-      "german": "Altar"
-    },
-    {
-      "id": 818,
-      "latin": "gaudium",
-      "german": "Freude"
-    },
-    {
-      "id": 819,
-      "latin": "dea",
-      "german": "Göttin"
-    },
-    {
-      "id": 820,
-      "latin": "salūs (salūtis f)",
-      "german": "Gesundheit, Glück, Rettung, Gruß"
-    },
-    {
-      "id": 821,
-      "latin": "pāx (pācis f)",
-      "german": "Friede"
-    },
-    {
-      "id": 822,
-      "latin": "ōrāre (ōrō)",
-      "german": "bitten, beten"
-    },
-    {
-      "id": 823,
-      "latin": "agmen (agminis n)",
-      "german": "(Heeres-)Zug"
-    },
-    {
-      "id": 824,
-      "latin": "domum",
-      "german": "nach Hause"
-    },
-    {
-      "id": 825,
-      "latin": "currere",
-      "german": "eilen, laufen"
-    },
-    {
-      "id": 826,
-      "latin": "consistere",
-      "german": "haltmachen, sich aufstellen"
-    },
-    {
-      "id": 827,
-      "latin": "quod",
-      "german": "dass, weil"
-    },
-    {
-      "id": 828,
-      "latin": "petere",
-      "german": "(auf)suchen, (er)streben, bitten, verlangen"
-    },
-    {
-      "id": 829,
-      "latin": "intrāre",
-      "german": "betreten, eintreten"
-    },
-    {
-      "id": 830,
-      "latin": "dīcere",
-      "german": "sagen, sprechen"
-    },
-    {
-      "id": 831,
-      "latin": "dēnique",
-      "german": "schließlich, zuletzt"
-    },
-    {
-      "id": 832,
-      "latin": "dēbēre",
-      "german": "müssen, sollen; schulden"
-    },
-    {
-      "id": 833,
-      "latin": "Decimus",
-      "german": "Decimus (männlicher Eigenname)"
-    },
-    {
-      "id": 834,
-      "latin": "mōns Esquilīnus",
-      "german": "der Esquilin (einer der sieben Hügel Roms)"
-    },
-    {
-      "id": 835,
-      "latin": "gēns Aquīlia",
-      "german": "die (adlige) Familie der Aquilier"
-    },
-    {
-      "id": 836,
-      "latin": "Larēs (Larum m Pl.)",
-      "german": "die Laren (Gottheiten für Haus und Familie)"
-    },
-    {
-      "id": 837,
-      "latin": "Capitolium",
-      "german": "das Kapitol (einer der sieben Hügel Roms)"
-    },
-    {
-      "id": 838,
-      "latin": "Iuppiter (Iovis m)",
-      "german": "Jupiter (höchster Gott der Römer)"
-    },
-    {
-      "id": 839,
-      "latin": "Iūno (Jūnōnis f)",
-      "german": "Juno (Gemahlin Jupiters)"
-    },
-    {
-      "id": 840,
-      "latin": "Aquīlii (Aquīliōrum m Pl.)",
-      "german": "die Aquilier"
+      "nom_sg": "agmen",
+      "nom_pl": "agmina",
+      "genitiv_sg": "agminis",
+      "deklination": "3. Deklination",
+      "dativ_sg": "agminī",
+      "dativ_pl": "agminibus",
+      "bedeutung_sg": "dem Zug / Heereszug",
+      "bedeutung_pl": "den Zügen"
     }
-  ]
+  ],
+  "dativ_pronomen": [],
+  "dativ_verben": []
 }
