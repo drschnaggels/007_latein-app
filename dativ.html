@@ -187,7 +187,9 @@
       `<tr class="${label.startsWith('Dativ') ? 'font-semibold' : 'text-slate-500'}"><td class="pr-3">${label}</td><td>${esc(f)}</td></tr>`).join('');
     const extra = String(n.dativ_pl).includes('/')
       ? ` Bei <b>${esc(n.nom_sg)}</b> gibt es zwei Formen im Dativ Plural: ${esc(n.dativ_pl)}.` : '';
-    return `<p>${nounRule(n)}${extra}</p><table class="text-sm">${rows}</table>`;
+    // Optionaler Hinweis aus den Lektionsdaten
+    const note = n.hinweis ? `<p>💡 ${esc(n.hinweis)}</p>` : '';
+    return `<p>${nounRule(n)}${extra}</p>${note}<table class="text-sm">${rows}</table>`;
   }
 
   // Signal-Endung einer Form, z. B. „a-Deklination + Endung -ae = Dativ Singular“

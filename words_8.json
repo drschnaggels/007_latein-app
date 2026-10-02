@@ -114,7 +114,8 @@
       "bedeutung_sg": "der Göttin",
       "bedeutung_pl": "den Göttinnen",
       "nom_bedeutung_sg": "die Göttin",
-      "nom_bedeutung_pl": "die Göttinnen"
+      "nom_bedeutung_pl": "die Göttinnen",
+      "hinweis": "deābus ist üblich, weil deīs auch „den Göttern“ (von deus) bedeuten kann."
     },
     {
       "nom_sg": "mōns",
@@ -161,7 +162,7 @@
       "dativ_pl": "parentibus",
       "bedeutung_sg": "dem Elternteil",
       "bedeutung_pl": "den Eltern",
-      "nom_bedeutung_sg": "das Elternteil",
+      "nom_bedeutung_sg": "der Elternteil",
       "nom_bedeutung_pl": "die Eltern"
     },
     {
