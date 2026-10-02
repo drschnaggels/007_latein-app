@@ -9,10 +9,10 @@
     { "id": 905, "latin": "convenīre (conveniō)", "german": "besuchen, zusammenkommen, zusammenpassen" },
     { "id": 906, "latin": "hospes (hospitis m)", "german": "Fremder, Gast, Gastgeber" },
     { "id": 907, "latin": "dominus", "german": "Herr" },
-    { "id": 908, "latin": "consīdere (consīdō)", "german": "sich setzen, sich niederlassen" },
+    { "id": 908, "latin": "cōnsīdere (cōnsīdō)", "german": "sich setzen, sich niederlassen" },
     { "id": 909, "latin": "pārēre (pāreō)", "german": "gehorchen, sich richten nach" },
     { "id": 910, "latin": "aqua", "german": "Wasser" },
-    { "id": 911, "latin": "postea", "german": "nachher, später" },
+    { "id": 911, "latin": "posteā", "german": "nachher, später" },
     { "id": 912, "latin": "cibus", "german": "Nahrung, Speise" },
     { "id": 913, "latin": "praebēre (praebeō)", "german": "geben, hinhalten" },
     { "id": 914, "latin": "bibere (bibō)", "german": "trinken" },
@@ -112,9 +112,9 @@
       "dativ_sg": "mōrī",
       "dativ_pl": "mōribus",
       "bedeutung_sg": "der Sitte",
-      "bedeutung_pl": "den Sitten / dem Charakter",
+      "bedeutung_pl": "den Sitten / den Gebräuchen",
       "nom_bedeutung_sg": "die Sitte",
-      "nom_bedeutung_pl": "die Sitten / der Charakter"
+      "nom_bedeutung_pl": "die Sitten / die Gebräuche"
     },
     {
       "nom_sg": "mūnus",
