@@ -42,6 +42,8 @@ window.ViaTim = (() => {
         dativ_substantive: arr(d.dativ_substantive),
         dativ_pronomen: arr(d.dativ_pronomen),
         dativ_verben: arr(d.dativ_verben),
+        adjektive: arr(d.adjektive),
+        dativ_exercises: d.dativ_exercises || {},
       });
     });
     lessons.sort((a, b) => a.nr.localeCompare(b.nr, 'de', { numeric: true }));

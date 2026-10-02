@@ -119,13 +119,15 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); } catch (e) {}
   }
 
+  // z. B. vta_dativ_stage_2_5_9
+  const stageKey = stage => STAGE_KEY + stage.id.replace('.', '_') + '_' + sel;
   function getResult(stage) {
-    try { return JSON.parse(localStorage.getItem(STAGE_KEY + stage.id + '_' + sel)) || null; } catch (e) { return null; }
+    try { return JSON.parse(localStorage.getItem(stageKey(stage))) || null; } catch (e) { return null; }
   }
   function saveResult(stage, pct) {
     const old = getResult(stage);
     if (old && old.best >= pct) return;
-    try { localStorage.setItem(STAGE_KEY + stage.id + '_' + sel, JSON.stringify({ best: pct, stars: starsFor(pct) })); } catch (e) {}
+    try { localStorage.setItem(stageKey(stage), JSON.stringify({ best: pct, stars: starsFor(pct) })); } catch (e) {}
   }
 
   const starsFor = pct => (pct >= 90 ? 3 : pct >= 80 ? 2 : pct >= 60 ? 1 : 0);
@@ -230,8 +232,16 @@
           explain: `<p>${signalRule(n, num, kasus, form)} → ${esc(correct)}</p>`, detail: nounTable(n),
           review: `${form} = ${correct}`,
         }));
-      });
+      })
+      .concat(data.singles.filter(s => s.numerus === num).map(bookQuestion));
   }
+
+  // Feste Übung aus dem Schulbuch (dativ_exercises)
+  const bookQuestion = b => ({
+    ask: b.prompt, show: b.latin, hint: 'Beispiel aus dem Buch',
+    options: [b.correct, ...distract(b.correct, b.distractors || [], [], 3)], correct: b.correct,
+    explain: b.erklaerung ? `<p>${esc(b.erklaerung)}</p>` : '', review: `${b.latin} = ${b.correct}`,
+  });
 
   function mapping(num) {
     return data.nouns
@@ -303,14 +313,78 @@
     });
   }
 
-  // Stufe 4 (Synthese: Mini-Sätze wie „Mulieribus persuādent“) dockt später als weiterer Eintrag mit build() an
+  // ---------- Stufe 2.5: Wortgruppen (Empfänger-Dativ & KNG-Kongruenz) ----------
+  const GENUS = { m: 'maskulin', f: 'feminin', n: 'neutrum' };
+  // Adjektive der a/o-Deklination (-us, -a, -um)
+  const ADJ_END = {
+    dat: { sg: { m: 'ō', f: 'ae', n: 'ō' }, pl: { m: 'īs', f: 'īs', n: 'īs' } },
+    nom: { sg: { m: 'us', f: 'a', n: 'um' }, pl: { m: 'ī', f: 'ae', n: 'a' } },
+  };
+  const adjForm = (a, kasus, num, g) => a.m.replace(/us$/, '') + ADJ_END[kasus][num][g];
+  const firstAlt = s => String(s).split(' / ')[0].trim();   // „dem Stamm / Volk“ → „dem Stamm“
+  // Deutsches Adjektiv nach bestimmtem Artikel: Nominativ Singular -e, sonst -en
+  function germanPhrase(withArticle, adj, ending) {
+    const [art, ...rest] = firstAlt(withArticle).split(' ');
+    return `${art} ${adj}${ending} ${rest.join(' ')}`;
+  }
+
+  function phraseCheck() {
+    const generated = !data.adjectives.length ? [] : data.nouns
+      .filter(n => GENUS[n.genus])
+      .flatMap(n => {
+        const nums = shuffle(['sg', 'pl'].filter(num =>
+          ['dativ_', 'bedeutung_', 'nom_bedeutung_'].every(f => valid(n[f + num]))));
+        if (!nums.length) return [];
+        const g = n.genus;
+        const pick = () => data.adjectives[Math.floor(Math.random() * data.adjectives.length)];
+        const explain = (a, num) => {
+          const form = adjForm(a, 'dat', num, g);
+          const hint3 = declKey(n) === '3' ? ' Die Endungen müssen dabei nicht gleich aussehen!' : '';
+          return `<p><b>${esc(form)}</b> = Dativ ${NUM[num]} ${GENUS[g]} – das Adjektiv richtet sich in Kasus, Numerus ` +
+            `und Genus (KNG) nach <b>${esc(n.nom_sg)}</b> (${g}.).${hint3}</p>`;
+        };
+
+        // a) Wortgruppe übersetzen
+        const a1 = pick();
+        const n1 = nums[0];
+        const other = n1 === 'sg' ? 'pl' : 'sg';
+        const latin1 = `${firstAlt(n['dativ_' + n1])} ${adjForm(a1, 'dat', n1, g)}`;
+        const correct1 = germanPhrase(n['bedeutung_' + n1], a1.german, 'en');
+        const wrong1 = [germanPhrase(n['nom_bedeutung_' + n1], a1.german, n1 === 'sg' ? 'e' : 'en')];
+        if (valid(n['bedeutung_' + other])) wrong1.push(germanPhrase(n['bedeutung_' + other], a1.german, 'en'));
+
+        // b) passende Adjektivform ergänzen
+        const a2 = pick();
+        const n2 = nums[1] || nums[0];
+        const correct2 = adjForm(a2, 'dat', n2, g);
+        const wrong2 = [adjForm(a2, 'dat', 'sg', 'm'), adjForm(a2, 'dat', 'sg', 'f'), adjForm(a2, 'dat', 'pl', g), adjForm(a2, 'nom', n2, g), adjForm(a2, 'nom', 'sg', g)];
+
+        return [{
+          ask: 'Wie übersetzt man diese Wortgruppe?', show: latin1, hint: `${n.nom_sg} (${g}.) + ${a1.m}, ${a1.f}, ${a1.n}`,
+          options: [correct1, ...distract(correct1, wrong1, [], 3)], correct: correct1,
+          explain: explain(a1, n1) + `<p>${esc(latin1)} → ${esc(correct1)}</p>`, detail: nounTable(n),
+          review: `${latin1} = ${correct1}`,
+        }, {
+          ask: `Welche Form von „${a2.m}“ (${a2.german}) passt?`, show: `${firstAlt(n['dativ_' + n2])} ___`,
+          hint: `${n.nom_sg} (${g}.) · Dativ ${NUM[n2]}`,
+          options: [correct2, ...distract(correct2, wrong2, [], 3)], correct: correct2,
+          explain: explain(a2, n2), detail: nounTable(n),
+          review: `${firstAlt(n['dativ_' + n2])} ${correct2}`,
+        }];
+      });
+    return data.phrases.map(bookQuestion).concat(generated);
+  }
+
+  // Stufe 4 (Synthese: Mini-Sätze wie „Mulieribus persuādent“) dockt später als weiterer Eintrag mit build() an.
+  // hidden: vorerst ausgeblendet (Fokus auf Substantive & Adjektive), Code bleibt erhalten.
   const STAGES = [
     { id: '1a', title: 'Stufe 1a · Signal-Check Singular', mode: 'Signal-Check Singular (Einzahl)', build: () => signalCheck('sg') },
     { id: '1b', title: 'Stufe 1b · Signal-Check Plural', mode: 'Signal-Check Plural (Mehrzahl)', build: () => signalCheck('pl') },
     { id: '2a', title: 'Stufe 2a · Dativ Singular bilden', mode: 'Dativ-Formen Singular bilden', build: () => mapping('sg') },
     { id: '2b', title: 'Stufe 2b · Dativ Plural bilden', mode: 'Dativ-Formen Plural bilden', build: () => mapping('pl') },
-    { id: '3a', title: 'Stufe 3a · Pronomen', mode: 'Dativ-Pronomen', build: pronounQuestions },
-    { id: '3b', title: 'Stufe 3b · Verben mit Dativ', mode: 'Verben mit Dativ', build: verbQuestions },
+    { id: '2.5', title: 'Stufe 2.5 · Wortgruppen-Check', mode: 'Wortgruppen: Empfänger-Dativ & KNG', build: phraseCheck },
+    { id: '3a', title: 'Stufe 3a · Pronomen', mode: 'Dativ-Pronomen', build: pronounQuestions, hidden: true },
+    { id: '3b', title: 'Stufe 3b · Verben mit Dativ', mode: 'Verben mit Dativ', build: verbQuestions, hidden: true },
     { id: '4', title: 'Stufe 4 · Mini-Sätze', mode: 'Synthese', soon: true },
   ];
 
@@ -326,7 +400,10 @@
         const words = w.head.split(/\s+/);
         return words.some(x => /re$/.test(x)) && !words.some(x => dativWords.has(x) || NOT_DISTRACTOR.includes(x));
       });
-    return { nouns, pronouns, verbs, otherVerbs };
+    const adjectives = chosen.flatMap(l => l.adjektive).filter(a => a && /us$/.test(a.m) && a.f && a.n && a.german);
+    const exercises = key => chosen.flatMap(l => Array.isArray(l.dativ_exercises[key]) ? l.dativ_exercises[key] : [])
+      .filter(b => b && b.latin && b.correct);
+    return { nouns, pronouns, verbs, otherVerbs, adjectives, singles: exercises('stage_1_singles'), phrases: exercises('stage_2_5_phrases') };
   }
 
   // ---------- Ansichten ----------
@@ -513,6 +590,7 @@
       data = prepareData(chosen);
       // Nur Stufen mit Daten anzeigen; die Freischalt-Kette läuft über diese Liste
       stages = STAGES
+        .filter(st => !st.hidden)
         .map(st => ({ ...st, count: st.soon ? 0 : st.build().length }))
         .filter(st => st.soon || st.count > 0);
       renderOverview();

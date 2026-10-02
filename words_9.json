@@ -43,6 +43,7 @@
       "nom_pl": "dominī",
       "genitiv_sg": "dominī",
       "deklination": "o-Deklination",
+      "genus": "m",
       "dativ_sg": "dominō",
       "dativ_pl": "dominīs",
       "bedeutung_sg": "dem Herrn",
@@ -55,6 +56,7 @@
       "nom_pl": "cibī",
       "genitiv_sg": "cibī",
       "deklination": "o-Deklination",
+      "genus": "m",
       "dativ_sg": "cibō",
       "dativ_pl": "cibīs",
       "bedeutung_sg": "der Speise",
@@ -67,6 +69,7 @@
       "nom_pl": "mulierēs",
       "genitiv_sg": "mulieris",
       "deklination": "3. Deklination",
+      "genus": "f",
       "dativ_sg": "mulierī",
       "dativ_pl": "mulieribus",
       "bedeutung_sg": "der Frau",
@@ -79,6 +82,7 @@
       "nom_pl": "hospitēs",
       "genitiv_sg": "hospitis",
       "deklination": "3. Deklination",
+      "genus": "m",
       "dativ_sg": "hospitī",
       "dativ_pl": "hospitibus",
       "bedeutung_sg": "dem Gast",
@@ -91,6 +95,7 @@
       "nom_pl": "ōrātiōnēs",
       "genitiv_sg": "ōrātiōnis",
       "deklination": "3. Deklination",
+      "genus": "f",
       "dativ_sg": "ōrātiōnī",
       "dativ_pl": "ōrātiōnibus",
       "bedeutung_sg": "der Rede",
@@ -103,6 +108,7 @@
       "nom_pl": "mōrēs",
       "genitiv_sg": "mōris",
       "deklination": "3. Deklination",
+      "genus": "m",
       "dativ_sg": "mōrī",
       "dativ_pl": "mōribus",
       "bedeutung_sg": "der Sitte",
@@ -115,6 +121,7 @@
       "nom_pl": "mūnera",
       "genitiv_sg": "mūneris",
       "deklination": "3. Deklination",
+      "genus": "n",
       "dativ_sg": "mūnerī",
       "dativ_pl": "mūneribus",
       "bedeutung_sg": "der Aufgabe / dem Geschenk",
@@ -127,6 +134,7 @@
       "nom_pl": "itinera",
       "genitiv_sg": "itineris",
       "deklination": "3. Deklination",
+      "genus": "n",
       "dativ_sg": "itinerī",
       "dativ_pl": "itineribus",
       "bedeutung_sg": "dem Weg / der Reise",
@@ -167,5 +175,134 @@
       "german": "teilnehmen an, dazwischen sein",
       "beispiel": "ōrātiōnī interesse (an der Rede teilnehmen)"
     }
-  ]
+  ],
+  "adjektive": [
+    {
+      "m": "parvus",
+      "f": "parva",
+      "n": "parvum",
+      "german": "klein"
+    },
+    {
+      "m": "Graecus",
+      "f": "Graeca",
+      "n": "Graecum",
+      "german": "griechisch"
+    },
+    {
+      "m": "Rōmānus",
+      "f": "Rōmāna",
+      "n": "Rōmānum",
+      "german": "römisch"
+    }
+  ],
+  "dativ_exercises": {
+    "stage_1_singles": [
+      {
+        "latin": "mercātōrī",
+        "numerus": "sg",
+        "prompt": "Welcher Übersetzung entspricht diese Form?",
+        "correct": "dem Händler (Dativ)",
+        "distractors": [
+          "der Händler (Nominativ)",
+          "des Händlers (Genitiv)"
+        ],
+        "erklaerung": "mercātor, mercātōris (3. Deklination) + Endung -ī = Dativ Singular → dem Händler"
+      },
+      {
+        "latin": "equō",
+        "numerus": "sg",
+        "prompt": "Welcher Übersetzung entspricht diese Form?",
+        "correct": "dem Pferd (Dativ)",
+        "distractors": [
+          "das Pferd (Nominativ)",
+          "die Pferde (Nominativ Plural)"
+        ],
+        "erklaerung": "equus, equī (o-Deklination) + Endung -ō = Dativ Singular → dem Pferd"
+      },
+      {
+        "latin": "bestiīs",
+        "numerus": "pl",
+        "prompt": "Welcher Übersetzung entspricht diese Form?",
+        "correct": "den Tieren (Dativ)",
+        "distractors": [
+          "die Tiere (Nominativ)",
+          "der Tiere (Genitiv)"
+        ],
+        "erklaerung": "bestia, bestiae (a-Deklination) + Endung -īs = Dativ Plural → den Tieren"
+      }
+    ],
+    "stage_2_5_phrases": [
+      {
+        "latin": "cibus hospitī",
+        "prompt": "Was bedeutet diese Wortgruppe?",
+        "correct": "Speise für den Gast / dem Gast",
+        "distractors": [
+          "die Speise des Gastes",
+          "der Gast isst"
+        ],
+        "erklaerung": "hospitī ist Dativ Singular von hospes (3. Deklination): Der Gast ist der Empfänger – für wen ist die Speise?"
+      },
+      {
+        "latin": "vīnum senātōrī",
+        "prompt": "Was bedeutet diese Wortgruppe?",
+        "correct": "Wein für den Senator / dem Senator",
+        "distractors": [
+          "der Wein des Senators",
+          "der Senator tränkt"
+        ],
+        "erklaerung": "senātōrī ist Dativ Singular von senātor (3. Deklination): Der Senator bekommt den Wein."
+      },
+      {
+        "latin": "signum dominae",
+        "prompt": "Was bedeutet diese Wortgruppe?",
+        "correct": "ein Zeichen für die Herrin / der Herrin",
+        "distractors": [
+          "die Herrin zeigt",
+          "ein Zeichen für die Herrinnen"
+        ],
+        "erklaerung": "dominae ist hier Dativ Singular von domina (a-Deklination). Achtung: -ae kann auch Genitiv Singular sein – der Zusammenhang entscheidet."
+      },
+      {
+        "latin": "mūnera Laribus",
+        "prompt": "Was bedeutet diese Wortgruppe?",
+        "correct": "Geschenke für die Hausgötter",
+        "distractors": [
+          "die Geschenke der Hausgötter",
+          "die göttlichen Geschenke"
+        ],
+        "erklaerung": "Laribus ist Dativ Plural von Larēs (3. Deklination): Die Hausgötter bekommen die Geschenke."
+      },
+      {
+        "latin": "amīcō Graecō",
+        "prompt": "Wie übersetzt man diese Wortgruppe?",
+        "correct": "dem griechischen Freund",
+        "distractors": [
+          "der griechische Freund",
+          "des griechischen Freundes"
+        ],
+        "erklaerung": "amīcō und Graecō sind beide Dativ Singular maskulin – das Adjektiv stimmt in Kasus, Numerus und Genus (KNG) mit amīcus überein."
+      },
+      {
+        "latin": "puerō parvō",
+        "prompt": "Wie übersetzt man diese Wortgruppe?",
+        "correct": "dem kleinen Jungen",
+        "distractors": [
+          "der kleine Junge",
+          "die kleinen Jungen"
+        ],
+        "erklaerung": "puerō und parvō sind beide Dativ Singular maskulin (KNG-Kongruenz)."
+      },
+      {
+        "latin": "mulieribus Rōmānīs",
+        "prompt": "Wie übersetzt man diese Wortgruppe?",
+        "correct": "den römischen Frauen",
+        "distractors": [
+          "die römischen Frauen",
+          "der einen Frau"
+        ],
+        "erklaerung": "mulieribus (3. Deklination) und Rōmānīs (a-Deklination) sind beide Dativ Plural feminin – verschiedene Endungen, aber gleicher Kasus, Numerus und Genus (KNG)."
+      }
+    ]
+  }
 }

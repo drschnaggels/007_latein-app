@@ -68,8 +68,7 @@
     $('infoVocab').textContent = `${count('vokabeln')} Vokabeln – Bedeutungen lernen in zwei Runden`;
     $('infoDativ').textContent = [
       `${count('dativ_substantive')} Substantive`,
-      count('dativ_pronomen') && `${count('dativ_pronomen')} Pronomen`,
-      count('dativ_verben') && `${count('dativ_verben')} Verben mit Dativ`,
+      count('adjektive') && `${count('adjektive')} Adjektive`,
     ].filter(Boolean).join(' · ');
 
     const q = '?l=' + encodeURIComponent(sel);
