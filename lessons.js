@@ -1,4 +1,6 @@
 // Gemeinsame Daten-Logik für alle Seiten von „Via Tim ad Romam“
+// Wichtig: Nur rückwärtskompatibel erweitern und bei jeder Änderung die Version ?v= in allen HTML-Seiten erhöhen –
+// sonst kann der Browser-Cache (GitHub Pages: 10 Minuten) alte und neue Dateien mischen.
 window.ViaTim = (() => {
   // Lektionsdateien – für eine neue Lektion hier eine Zeile ergänzen
   const FILES = [
@@ -22,7 +24,8 @@ window.ViaTim = (() => {
     return a;
   };
 
-  const loadFile = file => fetch(file).then(r => {
+  // cache: 'no-cache' → Browser fragt immer beim Server nach, geänderte Vokabeln sind sofort da
+  const loadFile = file => fetch(file, { cache: 'no-cache' }).then(r => {
     if (!r.ok) throw new Error(`${file}: HTTP ${r.status}`);
     return r.json().catch(() => { throw new Error(`${file}: kein gültiges JSON`); });
   });
@@ -49,7 +52,11 @@ window.ViaTim = (() => {
       });
     });
     lessons.sort((a, b) => a.nr.localeCompare(b.nr, 'de', { numeric: true }));
-    if (!lessons.length) throw new Error(failed.join(' · ') || 'Keine Lektionen gefunden');
+    if (!lessons.length) {
+      const err = new Error(failed.join(' · ') || 'Keine Lektionen gefunden');
+      err.isLoadError = true;
+      throw err;
+    }
     return { lessons, failed };
   }
 
@@ -83,6 +90,13 @@ window.ViaTim = (() => {
 
   function showLoadError(box, err) {
     box.classList.remove('hidden');
+    if (!err.isLoadError) {
+      // Kein Ladefehler, sondern ein Programmfehler – meist alte und neue Dateien gemischt (Cache)
+      box.innerHTML = '<strong>Neue Version verfügbar – bitte neu laden.</strong><br>' +
+        '<button class="mt-2 px-4 py-2 rounded-xl bg-red-600 text-white font-semibold" onclick="location.reload()">Neu laden</button><br>' +
+        '<span class="text-xs opacity-70">Details: ' + esc(err.message) + '</span>';
+      return;
+    }
     box.innerHTML = '<strong>Die Lektionsdateien konnten nicht geladen werden.</strong><br>' +
       'Bitte die App über einen lokalen Server starten, z. B. <code>npx serve</code> oder ' +
       '<code>python3 -m http.server</code>, und dann <code>http://localhost:…</code> öffnen.<br>' +
