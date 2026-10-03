@@ -49,23 +49,26 @@
     nav.innerHTML = '';
     const options = lessons.map(l => ({ value: l.nr, label: l.titel }));
     if (lessons.length > 1) {
-      options.push({ value: ViaTim.ALL, label: lessons.length === 2 ? 'Beide zusammen' : 'Alle' });
+      options.push({ value: ViaTim.ALL, label: lessons.length === 2 ? 'Beide zusammen' : 'Alle', disabled: !ViaTim.ALLOW_ALL });
     }
-    // Ungültige Auswahl (z. B. alte Lektion) → alle
-    if (!options.some(o => o.value === sel)) sel = options[options.length - 1].value;
+    // Ungültige oder gesperrte Auswahl (z. B. alte Lektion, „Beide“) → erste wählbare Option
+    if (!options.some(o => o.value === sel && !o.disabled)) sel = options.find(o => !o.disabled).value;
 
     options.forEach(o => {
       const b = document.createElement('button');
       b.textContent = o.label;
+      b.disabled = !!o.disabled;
       b.className = 'px-4 py-2 rounded-xl font-semibold shadow-sm transition ' +
-        (o.value === sel ? 'bg-indigo-600 text-white' : 'bg-white hover:bg-indigo-50');
-      b.onclick = () => { sel = o.value; ViaTim.setSelection(sel); render(); };
+        (o.disabled ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+          : o.value === sel ? 'bg-indigo-600 text-white' : 'bg-white hover:bg-indigo-50');
+      if (o.disabled) b.title = 'vorübergehend nicht verfügbar';
+      else b.onclick = () => { sel = o.value; ViaTim.setSelection(sel); render(); };
       nav.appendChild(b);
     });
 
     const chosen = ViaTim.selected(lessons, sel);
     const count = key => chosen.reduce((n, l) => n + l[key].length, 0);
-    $('infoVocab').textContent = `${count('vokabeln')} Vokabeln – Bedeutungen lernen in zwei Runden`;
+    $('infoVocab').textContent = `${count('vokabeln')} Vokabeln – in Teil 1 und Teil 2`;
     $('infoDativ').textContent = [
       `${count('dativ_substantive')} Substantive`,
       count('adjektive') && `${count('adjektive')} Adjektive`,

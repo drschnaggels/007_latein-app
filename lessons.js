@@ -7,6 +7,8 @@ window.ViaTim = (() => {
   ];
   const SELECTION_KEY = 'via-tim-auswahl';
   const ALL = 'all';
+  // „Alle Lektionen zusammen“ ist vorübergehend gesperrt – zum Freischalten auf true setzen
+  const ALLOW_ALL = false;
 
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
   const arr = v => (Array.isArray(v) ? v : []);
@@ -62,10 +64,11 @@ window.ViaTim = (() => {
     try { localStorage.setItem(SELECTION_KEY, sel); } catch (e) {}
   }
 
-  // Liefert die gewählten Lektionen; unbekannte Auswahl → alle
+  // Liefert die gewählten Lektionen; unbekannte Auswahl → alle (bzw. erste Lektion, solange ALLOW_ALL aus ist)
   function selected(lessons, sel) {
     const hit = lessons.filter(l => l.nr === sel);
-    return sel !== ALL && hit.length ? hit : lessons;
+    if (sel !== ALL && hit.length) return hit;
+    return ALLOW_ALL ? lessons : lessons.slice(0, 1);
   }
 
   function selectionLabel(lessons, sel) {
@@ -73,6 +76,10 @@ window.ViaTim = (() => {
     if (list.length === 1) return list[0].titel;
     return lessons.length === 2 ? `${lessons[0].titel} + ${lessons[1].nr}` : 'Alle Lektionen';
   }
+
+  // ---------- Bewertung (gilt für alle Module) ----------
+  const starsFor = pct => (pct >= 95 ? 3 : pct >= 80 ? 2 : pct >= 60 ? 1 : 0);
+  const starText = n => '★'.repeat(n) + '☆'.repeat(3 - n);
 
   function showLoadError(box, err) {
     box.classList.remove('hidden');
@@ -88,5 +95,8 @@ window.ViaTim = (() => {
     box.innerHTML = '<strong>Einige Dateien konnten nicht geladen werden:</strong> ' + esc(failed.join(' · '));
   }
 
-  return { ALL, esc, shuffle, loadLessons, getSelection, setSelection, selected, selectionLabel, showLoadError, showPartialError };
+  return {
+    ALL, ALLOW_ALL, esc, shuffle, loadLessons, getSelection, setSelection, selected, selectionLabel,
+    starsFor, starText, showLoadError, showPartialError,
+  };
 })();

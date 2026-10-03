@@ -82,7 +82,7 @@
 
 <script>
 (() => {
-  const { esc, shuffle } = ViaTim;
+  const { esc, shuffle, starsFor, starText } = ViaTim;
   const STORAGE_KEY = 'via-tim-dativ-v1';
   const STAGE_KEY = 'vta_dativ_stage_';   // + Stufe + '_' + Lektionsauswahl
   const PASS_PCT = 80;
@@ -130,8 +130,6 @@
     try { localStorage.setItem(stageKey(stage), JSON.stringify({ best: pct, stars: starsFor(pct) })); } catch (e) {}
   }
 
-  const starsFor = pct => (pct >= 90 ? 3 : pct >= 80 ? 2 : pct >= 60 ? 1 : 0);
-  const starText = n => '★'.repeat(n) + '☆'.repeat(3 - n);
 
   // ---------- Hilfsfunktionen ----------
   const norm = s => String(s).trim().toLowerCase();
@@ -428,7 +426,7 @@
       const info = st.soon ? 'Demnächst' : !open ? '🔒 Erst die vorige Stufe mit Silber abschließen'
         : `${st.count} Fragen` + (res ? ` · Bestwert ${res.best} %` : '');
       b.innerHTML = `<div class="min-w-0"><p class="font-bold">${esc(st.title)}</p><p class="text-xs text-slate-500">${esc(info)}</p></div>` +
-        `<span class="shrink-0 text-xl text-amber-500">${st.soon ? '' : starText(res ? res.stars : 0)}</span>`;
+        `<span class="shrink-0 text-xl text-amber-500">${st.soon ? '' : starText(res ? starsFor(res.best) : 0)}</span>`;
       if (open) b.onclick = () => startStage(st);
       list.appendChild(b);
     });
@@ -584,7 +582,7 @@
       ViaTim.showPartialError($('error'), failed);
       sel = ViaTim.getSelection();
       const chosen = ViaTim.selected(lessons, sel);
-      if (chosen.length === lessons.length) sel = ViaTim.ALL;
+      sel = chosen.length === 1 ? chosen[0].nr : ViaTim.ALL;   // Speicher-Key passend zur tatsächlichen Auswahl
       $('lessonLabel').textContent = ViaTim.selectionLabel(lessons, sel);
       $('backLink').href = 'index.html?l=' + encodeURIComponent(sel);
       data = prepareData(chosen);

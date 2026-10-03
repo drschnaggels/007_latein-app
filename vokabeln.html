@@ -21,16 +21,22 @@
     <!-- Fehler / Hinweis -->
     <div id="error" class="hidden rounded-xl bg-red-50 border border-red-200 text-red-700 p-4 text-sm"></div>
 
+    <!-- Übersicht: Teil 1 / Teil 2 -->
+    <section id="overview" class="hidden space-y-3">
+      <p class="text-sm text-slate-500 text-center">🥉 ab 60 % · 🥈 ab 80 % · 🥇 ab 95 % richtig im ersten Versuch</p>
+      <div id="partList" class="grid gap-3"></div>
+    </section>
+
     <!-- Status -->
     <section id="status" class="hidden bg-white rounded-2xl shadow p-4 space-y-3">
       <div class="flex items-center justify-between gap-2">
-        <span id="roundLabel" class="text-sm font-semibold px-3 py-1 rounded-full bg-indigo-100 text-indigo-700"></span>
+        <button id="btnOverview" class="text-sm font-semibold text-slate-500 hover:text-slate-800">← Teile</button>
+        <span id="partLabel" class="text-sm font-semibold px-3 py-1 rounded-full bg-indigo-100 text-indigo-700"></span>
         <span class="text-sm font-semibold">🔥 <span id="streak">0</span> <span class="text-slate-400 font-normal">(Best: <span id="bestStreak">0</span>)</span></span>
       </div>
-      <p class="text-center text-lg">Noch <span id="remaining" class="text-3xl font-bold text-indigo-600">0</span> Vokabeln in dieser Runde</p>
       <div>
         <div class="flex justify-between text-xs text-slate-500 mb-1">
-          <span>Lektions-Fortschritt</span><span id="pctLabel">0 %</span>
+          <span><span id="doneCount">0</span> von <span id="totalCount">0</span> erledigt</span><span id="retryInfo"></span>
         </div>
         <div class="h-3 bg-slate-200 rounded-full overflow-hidden">
           <div id="pctBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-500" style="width:0%"></div>
@@ -47,19 +53,25 @@
       <div id="answers" class="grid gap-3"></div>
     </section>
 
-    <!-- Rundenabschluss -->
-    <section id="done" class="hidden bg-white rounded-2xl shadow p-6 text-center space-y-4">
-      <p id="doneTitle" class="text-2xl font-bold"></p>
-      <p id="doneText" class="text-slate-600"></p>
+    <!-- Auswertung -->
+    <section id="summary" class="hidden bg-white rounded-2xl shadow p-6 space-y-4">
+      <div class="text-center space-y-1">
+        <p id="sumPart" class="text-sm font-semibold text-slate-500"></p>
+        <p id="sumStars" class="text-4xl text-amber-500"></p>
+        <p id="sumTitle" class="text-2xl font-bold"></p>
+        <p id="sumText" class="text-slate-600"></p>
+        <p id="sumPct" class="text-5xl font-bold text-indigo-600"></p>
+      </div>
+      <div id="mistakes" class="hidden space-y-2">
+        <p class="text-sm font-semibold text-slate-500">Im ersten Versuch falsch:</p>
+        <ul id="mistakeList" class="text-sm divide-y divide-slate-100 border border-slate-200 rounded-xl"></ul>
+      </div>
       <div class="flex flex-col sm:flex-row gap-3 justify-center">
-        <button id="btnRound2" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700">Runde 2: Festigung starten</button>
-        <button id="btnReset" class="px-5 py-3 rounded-xl bg-slate-200 font-semibold hover:bg-slate-300">Fortschritt zurücksetzen</button>
+        <button id="btnNextPart" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700"></button>
+        <button id="btnAgain" class="px-5 py-3 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600">Nochmal</button>
+        <button id="btnToOverview" class="px-5 py-3 rounded-xl bg-slate-200 font-semibold hover:bg-slate-300">Zur Übersicht</button>
       </div>
     </section>
-
-    <p id="resetLink" class="hidden text-center">
-      <button id="btnResetSmall" class="text-xs text-slate-400 underline hover:text-slate-600">Fortschritt dieser Lektion zurücksetzen</button>
-    </p>
   </main>
 
   <!-- Toast -->
@@ -67,47 +79,39 @@
 
 <script>
 (() => {
-  const { shuffle } = ViaTim;
-  const STORAGE_KEY = 'latein-app-v1';
-  const ALL = '__all__';
+  const { shuffle, starsFor, starText } = ViaTim;
+  const STORAGE_KEY = 'latein-app-v1';      // Wortstatistik & Best-Streak
+  const PART_KEY = 'vta_vokabeln_';         // + Lektion + '_teil' + Nr
   const STREAK_MILESTONES = [5, 10, 20, 30, 50];
 
   const $ = id => document.getElementById(id);
-  let lessons = {};        // { lessonName: [{key, latin, german, lesson}] }
-  let current = null;      // aktuell gewählte Lektion (Name oder ALL)
-  let question = null;     // aktuelles Wort
-  let lastKey = null;
-  let locked = false;
+  let lesson = null;       // gewählte Lektion
+  let words = [];          // [{key, latin, german}] der ganzen Lektion (Ablenker-Pool)
+  let parts = [];          // [{nr, title, words}]
+  let run = null;          // aktueller Durchlauf
   let streak = 0;
+  let locked = false;
 
   // ---------- Speicher ----------
-  function load() {
+  const store = (() => {
     try {
       const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (s && typeof s === 'object') return { stats: {}, sessions: {}, bestStreak: 0, lastLesson: null, ...s };
+      if (s && typeof s === 'object') return { stats: {}, bestStreak: 0, ...s };
     } catch (e) {}
-    return { stats: {}, sessions: {}, bestStreak: 0, lastLesson: null };
-  }
-  const store = load();
+    return { stats: {}, bestStreak: 0 };
+  })();
   function save() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); } catch (e) {}
   }
 
-  function session() {
-    if (!store.sessions[current]) {
-      store.sessions[current] = { round: 1, done: [], totalCorrect: 0, milestone10Shown: false };
-    }
-    return store.sessions[current];
+  const partKey = part => `${PART_KEY}${lesson.nr}_teil${part.nr}`;
+  function getResult(part) {
+    try { return JSON.parse(localStorage.getItem(partKey(part))) || null; } catch (e) { return null; }
   }
-
-  // ---------- Hilfsfunktionen ----------
-  function pool() {
-    return current === ALL ? Object.values(lessons).flat() : (lessons[current] || []);
-  }
-
-  function openWords() {
-    const done = new Set(session().done);
-    return pool().filter(w => !done.has(w.key));
+  function saveResult(part, pct) {
+    const old = getResult(part);
+    if (old && old.best >= pct) return;
+    try { localStorage.setItem(partKey(part), JSON.stringify({ best: pct, stars: starsFor(pct) })); } catch (e) {}
   }
 
   let toastTimer;
@@ -119,50 +123,62 @@
     toastTimer = setTimeout(() => t.classList.add('opacity-0'), 2500);
   }
 
-  function celebrate() {
-    if (typeof confetti === 'function') {
-      confetti({ particleCount: 120, spread: 75, origin: { y: 0.6 } });
-    }
+  // ---------- Ansichten ----------
+  function show(section) {
+    ['overview', 'quiz', 'summary'].forEach(s => $(s).classList.toggle('hidden', s !== section));
+    $('status').classList.toggle('hidden', section !== 'quiz');
   }
 
-  // ---------- Rendering ----------
+  function renderOverview() {
+    locked = false;   // ausstehendes automatisches „Weiter“ verwerfen
+    const list = $('partList');
+    list.innerHTML = '';
+    parts.forEach(part => {
+      const res = getResult(part);
+      const first = part.words[0].latin;
+      const last = part.words[part.words.length - 1].latin;
+      const b = document.createElement('button');
+      b.className = 'w-full text-left bg-white rounded-2xl shadow p-4 flex items-center justify-between gap-3 border-2 border-transparent hover:border-indigo-400 transition';
+      b.innerHTML = '<div class="min-w-0"><p class="font-bold"></p><p class="text-xs text-slate-500"></p></div>' +
+        '<span class="shrink-0 text-xl text-amber-500"></span>';
+      b.querySelector('.font-bold').textContent = part.title;
+      b.querySelector('.text-xs').textContent = `${part.words.length} Vokabeln (${first} … ${last})` +
+        (res ? ` · Bestwert ${res.best} %` : '');
+      b.querySelector('span').textContent = starText(res ? starsFor(res.best) : 0);
+      b.onclick = () => startPart(part);
+      list.appendChild(b);
+    });
+    show('overview');
+  }
+
   function renderStatus() {
-    const s = session();
-    const n = pool().length;
-    const open = openWords().length;
-    $('roundLabel').textContent = s.round === 1 ? 'Runde 1: Basis' : 'Runde 2: Festigung';
-    $('roundLabel').className = 'text-sm font-semibold px-3 py-1 rounded-full ' +
-      (s.round === 1 ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700');
-    $('remaining').textContent = open;
-    const doneCount = n - open;
-    const pct = n ? Math.round(((s.round === 1 ? 0 : n) + doneCount) / (2 * n) * 100) : 0;
-    $('pctLabel').textContent = pct + ' %';
-    $('pctBar').style.width = pct + '%';
+    $('partLabel').textContent = run.part.title;
+    $('doneCount').textContent = run.done;
+    $('totalCount').textContent = run.totalQuestions;
+    $('pctBar').style.width = Math.round(run.done / run.totalQuestions * 100) + '%';
+    const retries = run.queue.filter(w => run.tried.has(w.key)).length;
+    $('retryInfo').textContent = retries ? `${retries} zur Wiederholung` : '';
     $('streak').textContent = streak;
     $('bestStreak').textContent = store.bestStreak;
   }
 
-  function show(section) {
-    $('status').classList.remove('hidden');
-    $('quiz').classList.toggle('hidden', section !== 'quiz');
-    $('done').classList.toggle('hidden', section !== 'done');
-    $('resetLink').classList.toggle('hidden', section !== 'quiz');
+  // ---------- Durchlauf ----------
+  function startPart(part) {
+    run = { part, queue: shuffle(part.words), totalQuestions: part.words.length,
+      firstTryCorrect: 0, wrongItemsArray: [], tried: new Set(), done: 0 };
+    nextQuestion();
   }
 
   function nextQuestion() {
     locked = false;
+    if (!run.queue.length) return showSummary();
     renderStatus();
-    let open = openWords();
-    if (open.length === 0) return showRoundDone();
+    const question = run.queue[0];
 
-    if (open.length > 1) open = open.filter(w => w.key !== lastKey);
-    question = open[Math.floor(Math.random() * open.length)];
-    lastKey = question.key;
-
-    // Distraktoren ausschließlich aus der gewählten Lektion, eindeutige Bedeutungen
+    // Ablenker ausschließlich aus der gewählten Lektion, eindeutige Bedeutungen
     const seen = new Set([question.german.trim().toLowerCase()]);
     const distractors = [];
-    for (const w of shuffle(pool())) {
+    for (const w of shuffle(words)) {
       const g = w.german.trim().toLowerCase();
       if (seen.has(g)) continue;
       seen.add(g);
@@ -192,8 +208,11 @@
   function answer(btn) {
     if (locked) return;
     locked = true;
-    const s = session();
+    const question = run.queue.shift();
     const correct = btn.dataset.correct === '1';
+    // Gewertet wird nur der erste Versuch pro Vokabel
+    const firstTry = !run.tried.has(question.key);
+    run.tried.add(question.key);
     const st = store.stats[question.key] || (store.stats[question.key] = { right: 0, wrong: 0 });
 
     document.querySelectorAll('#answers .answer').forEach(b => {
@@ -203,75 +222,68 @@
 
     if (correct) {
       st.right++;
+      if (firstTry) run.firstTryCorrect++;
+      run.done++;
       streak++;
-      s.totalCorrect++;
-      if (!s.done.includes(question.key)) s.done.push(question.key);
       if (streak > store.bestStreak) store.bestStreak = streak;
-
-      if (!s.milestone10Shown && s.totalCorrect >= 10) {
-        s.milestone10Shown = true;
-        toast('Erste 10 geschafft! 👍');
-      } else if (STREAK_MILESTONES.includes(streak)) {
-        toast(`🔥 ${streak} richtig in Folge!`);
-      }
+      if (STREAK_MILESTONES.includes(streak)) toast(`🔥 ${streak} richtig in Folge!`);
     } else {
       st.wrong++;
+      if (firstTry) run.wrongItemsArray.push(question);
       streak = 0;
+      // Später in diesem Teil noch einmal fragen
+      const at = Math.min(run.queue.length, 3 + Math.floor(Math.random() * 3));
+      run.queue.splice(at, 0, question);
       btn.classList.add('border-red-500', 'bg-red-50', 'text-red-800');
     }
     save();
     renderStatus();
-    setTimeout(nextQuestion, correct ? 700 : 1500);
+    setTimeout(() => { if (locked) nextQuestion(); }, correct ? 700 : 1500);
   }
 
-  function showRoundDone() {
-    const s = session();
-    question = null;
-    show('done');
-    celebrate();
-    if (s.round === 1) {
-      $('doneTitle').textContent = '🎉 Runde 1 geschafft!';
-      $('doneText').textContent = 'Jede Vokabel wurde einmal richtig beantwortet. Jetzt festigen?';
-      $('btnRound2').classList.remove('hidden');
-      toast('Runde 1 abgeschlossen! 🎉');
-    } else {
-      $('doneTitle').textContent = '🏆 Lektion gemeistert!';
-      $('doneText').textContent = 'Jede Vokabel wurde zweimal richtig beantwortet. Optime!';
-      $('btnRound2').classList.add('hidden');
-      toast('Festigung abgeschlossen! 🏆');
+  // ---------- Auswertung ----------
+  const LEVELS = [
+    { title: 'Noch nicht bestanden', text: 'Probiere es gleich nochmal!' },
+    { title: '🥉 Bronze', text: 'Guter Versuch!' },
+    { title: '🥈 Silber', text: 'Klasse! Teil gemeistert!' },
+    { title: '🥇 Gold', text: 'Meisterleistung!' },
+  ];
+
+  function showSummary() {
+    const { part, firstTryCorrect, totalQuestions, wrongItemsArray } = run;
+    const pct = Math.round(firstTryCorrect / totalQuestions * 100);
+    const stars = starsFor(pct);
+    saveResult(part, pct);
+
+    $('sumPart').textContent = `${lesson.titel} · ${part.title}`;
+    $('sumStars').textContent = starText(stars);
+    $('sumTitle').textContent = LEVELS[stars].title;
+    $('sumPct').textContent = pct + ' %';
+    $('sumText').textContent = `${firstTryCorrect} von ${totalQuestions} richtig im ersten Versuch – ${LEVELS[stars].text}`;
+    if (pct >= 80 && typeof confetti === 'function') confetti({ particleCount: 120, spread: 75, origin: { y: 0.6 } });
+
+    $('mistakes').classList.toggle('hidden', !wrongItemsArray.length);
+    const list = $('mistakeList');
+    list.innerHTML = '';
+    wrongItemsArray.forEach(w => {
+      const li = document.createElement('li');
+      li.className = 'px-3 py-2';
+      li.textContent = `${w.latin} = ${w.german}`;
+      list.appendChild(li);
+    });
+
+    const nextPart = parts[parts.indexOf(part) + 1];
+    $('btnNextPart').classList.toggle('hidden', !nextPart);
+    if (nextPart) {
+      $('btnNextPart').textContent = `Weiter zu ${nextPart.title} →`;
+      $('btnNextPart').onclick = () => startPart(nextPart);
     }
+    show('summary');
   }
 
-  // ---------- Aktionen ----------
-  function selectLesson(name) {
-    current = name;
-    lastKey = null;
-    // Nicht mehr existierende Wörter aus dem Rundenstand entfernen
-    const keys = new Set(pool().map(w => w.key));
-    session().done = session().done.filter(k => keys.has(k));
-    save();
-    nextQuestion();
-  }
-
-  function startRound2() {
-    const s = session();
-    s.round = 2;
-    s.done = [];
-    save();
-    nextQuestion();
-  }
-
-  function resetLesson() {
-    delete store.sessions[current];
-    streak = 0;
-    save();
-    toast('Fortschritt zurückgesetzt');
-    nextQuestion();
-  }
-
-  $('btnRound2').onclick = startRound2;
-  $('btnReset').onclick = resetLesson;
-  $('btnResetSmall').onclick = resetLesson;
+  $('btnAgain').onclick = () => startPart(run.part);
+  $('btnToOverview').onclick = renderOverview;
+  $('btnOverview').onclick = renderOverview;
 
   document.addEventListener('keydown', e => {
     if ($('quiz').classList.contains('hidden')) return;
@@ -282,19 +294,21 @@
 
   // ---------- Start ----------
   ViaTim.loadLessons()
-    .then(({ lessons: all, failed }) => {
+    .then(({ lessons, failed }) => {
       ViaTim.showPartialError($('error'), failed);
-      // Lektionsname (titel) bleibt Schlüssel für Statistik und Rundenstand
-      all.forEach(l => {
-        lessons[l.titel] = l.vokabeln.map(w => ({
-          key: `${l.titel}::${w.id}`, latin: String(w.latin), german: String(w.german), lesson: l.titel,
-        }));
-      });
       const sel = ViaTim.getSelection();
-      const chosen = ViaTim.selected(all, sel);
-      $('lessonLabel').textContent = ViaTim.selectionLabel(all, sel);
-      $('backLink').href = 'index.html?l=' + encodeURIComponent(sel);
-      selectLesson(chosen.length === 1 && all.length > 1 ? chosen[0].titel : ALL);
+      lesson = ViaTim.selected(lessons, sel)[0];
+      $('lessonLabel').textContent = lesson.titel;
+      $('backLink').href = 'index.html?l=' + encodeURIComponent(lesson.nr);
+      // Lektionsname (titel) bleibt Schlüssel der Wortstatistik
+      words = lesson.vokabeln.map(w => ({ key: `${lesson.titel}::${w.id}`, latin: String(w.latin), german: String(w.german) }));
+      // Feste Aufteilung nach Reihenfolge in der Datei: Teil 1 = erste Hälfte, Teil 2 = Rest
+      const half = Math.ceil(words.length / 2);
+      parts = [
+        { nr: 1, title: 'Teil 1', words: words.slice(0, half) },
+        { nr: 2, title: 'Teil 2', words: words.slice(half) },
+      ].filter(p => p.words.length);
+      renderOverview();
     })
     .catch(err => ViaTim.showLoadError($('error'), err));
 })();
